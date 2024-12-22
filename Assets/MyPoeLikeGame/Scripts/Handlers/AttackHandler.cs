@@ -1,5 +1,6 @@
+using System;
+using R3;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace MyPoeLikeGame.Handlers
 {
@@ -26,9 +27,8 @@ namespace MyPoeLikeGame.Handlers
 
         private AttackState currState = AttackState.IDLE;
 
-        private PlayerInput inputActions;
-
-        private bool attacking = false;
+        private PlayerInputHandler.AttackEvent nextInputEvent = null;
+        private PlayerInputHandler.AttackEvent currInputEvent = null;
 
         [SerializeField]
         private Skill skill;
@@ -37,31 +37,21 @@ namespace MyPoeLikeGame.Handlers
 
         private string GameObjectId => gameObject.GetInstanceID().ToString();
 
-        private void Awake()
-        {
-            inputActions = new();
-        }
+        IDisposable disposable;
 
         private void OnEnable()
         {
-            inputActions.Player.Attack.performed += Attack;
-            inputActions.Player.Attack.canceled += Attack;
-            inputActions.Enable();
-
             prevState = AttackState.NONE;
             currState = AttackState.IDLE;
+
+            disposable = Reactive.events
+                .OfType<IEvent, PlayerInputHandler.AttackEvent>()
+                .Subscribe(e => nextInputEvent = e);
         }
 
         private void OnDisable()
         {
-            inputActions.Disable();
-            inputActions.Player.Attack.performed -= Attack;
-            inputActions.Player.Attack.canceled -= Attack;
-        }
-
-        private void Attack(InputAction.CallbackContext ctx)
-        {
-            attacking = ctx.performed || (!ctx.canceled && attacking);
+            disposable.Dispose();
         }
 
         private void Update()
@@ -85,8 +75,10 @@ namespace MyPoeLikeGame.Handlers
 
             if (currState == AttackState.IDLE)
             {
-                if (attacking)
+                if (nextInputEvent != null)
                 {
+                    currInputEvent = nextInputEvent;
+                    nextInputEvent = null;
                     currState = AttackState.DRAW;
                 }
             }
@@ -104,7 +96,7 @@ namespace MyPoeLikeGame.Handlers
 
                 if (drawPercentage > 1.0f)
                 {
-                    if (attacking)
+                    if (currInputEvent.attacking)
                     {
                         currState = AttackState.OVERDRAW;
                     }
@@ -126,7 +118,7 @@ namespace MyPoeLikeGame.Handlers
                     sender = this
                 });
 
-                if (!attacking)
+                if (!currInputEvent.attacking)
                 {
                     currState = AttackState.FIRE;
                 }
