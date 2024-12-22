@@ -1,70 +1,42 @@
-using System;
 using R3;
+using System;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace MyPoeLikeGame.Handlers
 {
     public class AimingHandler : MonoBehaviour
     {
-        public class LookAtPointEvent : IEvent
-        {
-            public Vector2 lookAtPoint;
-        }
-
         public class AimingEvent : IEvent
         {
             public bool aiming;
         }
 
-        PlayerInput inputAction;
+        private IDisposable disposable;
 
-        IDisposable disposable;
-
-        private string gameObjectId => gameObject.GetInstanceID().ToString();
+        private string gameObjectId;
 
         private void Awake()
         {
-            inputAction = new();
+            gameObjectId = gameObject.GetInstanceID().ToString();
         }
 
         private void OnEnable()
         {
-            inputAction.Player.Look.performed += Look;
-            inputAction.Player.Aim.performed += Aim;
-            inputAction.Player.Aim.canceled += Aim;
-            inputAction.Enable();
-
-            var builder = Disposable.CreateBuilder();
-
-            var observable = Reactive.events
-                .Where(e => e.gameObjectId == gameObjectId);
-
-            observable.OfType<IEvent, LookAtPointEvent>()
-                .Select(e => e.lookAtPoint)
-                .Subscribe(lookAtPoint =>
-                {
-                    transform.LookAt(new Vector3(lookAtPoint.x, transform.position.y, lookAtPoint.y));
-                }).AddTo(ref builder);
-
-
-            disposable = builder.Build();
+            disposable = Reactive.events
+                .Where(e => e.gameObjectId == gameObjectId)
+                .OfType<IEvent, PlayerInputHandler.LookEvent>()
+                .Select(e => e.mousePosition)
+                .Subscribe(Look);
         }
 
         private void OnDisable()
         {
-            inputAction.Disable();
-            inputAction.Player.Look.performed -= Look;
-            inputAction.Player.Aim.performed -= Aim;
-            inputAction.Player.Aim.canceled -= Aim;
-
             disposable.Dispose();
         }
 
-        void Look(InputAction.CallbackContext ctx)
+        private void Look(Vector2 mousePosition)
         {
-            var screenPos = ctx.ReadValue<Vector2>();
-            var ray = Camera.main.ScreenPointToRay(screenPos);
+            var ray = Camera.main.ScreenPointToRay(mousePosition);
 
             var height = ray.origin.y;
             var distance = Mathf.Abs(height / ray.direction.y);
@@ -77,20 +49,7 @@ namespace MyPoeLikeGame.Handlers
                 point = hit.point;
             }
 
-            Reactive.events.OnNext(new LookAtPointEvent
-            {
-                gameObjectId = gameObjectId,
-                lookAtPoint = new Vector2(point.x, point.z)
-            });
-        }
-
-        private void Aim(InputAction.CallbackContext ctx)
-        {
-            Reactive.events.OnNext(new AimingEvent
-            {
-                gameObjectId = gameObjectId,
-                aiming = ctx.performed
-            });
+            transform.LookAt(new Vector3(point.x, transform.position.y, point.z));
         }
     }
 }

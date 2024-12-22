@@ -21,13 +21,17 @@ namespace MyPoeLikeGame.Handlers
             public Vector2 input;
         }
 
+        public class LookEvent : IEvent
+        {
+            public Vector2 mousePosition;
+        }
+
         // Start is called once before the first execution of Update after the MonoBehaviour is created
         void Awake()
         {
             inputActions = new();
             gameObjectId = gameObject.GetInstanceID().ToString();
         }
-
 
         private void OnEnable()
         {
@@ -36,6 +40,8 @@ namespace MyPoeLikeGame.Handlers
 
             inputActions.Player.Move.performed += Move;
             inputActions.Player.Move.canceled += Move;
+
+            inputActions.Player.Look.performed += Look;
             inputActions.Enable();
         }
 
@@ -47,6 +53,8 @@ namespace MyPoeLikeGame.Handlers
 
             inputActions.Player.Move.performed -= Move;
             inputActions.Player.Move.canceled -= Move;
+            
+            inputActions.Player.Look.performed -= Look;
         }
 
         private void Attack(InputAction.CallbackContext ctx)
@@ -86,6 +94,15 @@ namespace MyPoeLikeGame.Handlers
             {
                 gameObjectId = gameObjectId,
                 input = input
+            });
+        }
+
+        private void Look(InputAction.CallbackContext ctx)
+        {
+            Reactive.events.OnNext(new LookEvent
+            {
+                gameObjectId = gameObjectId,
+                mousePosition = ctx.ReadValue<Vector2>()
             });
         }
     }
