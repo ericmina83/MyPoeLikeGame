@@ -3,11 +3,10 @@ using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-namespace MyPoeLikeGame
+namespace MyPoeLikeGame.Handlers
 {
     [RequireComponent(typeof(CharacterController))]
-
-    public class MovementController : MonoBehaviour
+    public class MovementHandler : MonoBehaviour
     {
         public class MovementEvent : IEvent
         {

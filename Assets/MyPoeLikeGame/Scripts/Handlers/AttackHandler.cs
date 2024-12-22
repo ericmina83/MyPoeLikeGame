@@ -1,9 +1,9 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-namespace MyPoeLikeGame
+namespace MyPoeLikeGame.Handlers
 {
-    public class AttackController : MonoBehaviour
+    public class AttackHandler : MonoBehaviour
     {
         public enum AttackState
         {
@@ -19,7 +19,7 @@ namespace MyPoeLikeGame
         {
             public AttackState attackState;
             public float percentage;
-            public AttackController sender;
+            public AttackHandler sender;
         }
 
         private AttackState prevState = AttackState.NONE;

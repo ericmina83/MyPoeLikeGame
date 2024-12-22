@@ -2,10 +2,10 @@ using System;
 using R3;
 using UnityEngine;
 
-namespace MyPoeLikeGame
+namespace MyPoeLikeGame.Handlers
 {
     [RequireComponent(typeof(Animator))]
-    public class AnimationController : MonoBehaviour
+    public class AnimationHandler : MonoBehaviour
     {
         private IDisposable disposable = null;
 
@@ -29,7 +29,7 @@ namespace MyPoeLikeGame
 
             var builder = new DisposableBuilder();
 
-            observable.OfType<IEvent, MovementController.MovementEvent>()
+            observable.OfType<IEvent, MovementHandler.MovementEvent>()
                 .Select(e => e.speed)
                 .Subscribe(speed =>
                 {
@@ -37,7 +37,7 @@ namespace MyPoeLikeGame
                 })
                 .AddTo(ref builder);
 
-            observable.OfType<IEvent, AttackController.AttackEvent>()
+            observable.OfType<IEvent, AttackHandler.AttackEvent>()
                 .Subscribe(Attack)
                 .AddTo(ref builder);
 
@@ -65,26 +65,26 @@ namespace MyPoeLikeGame
             animator.SetFloat("Speed Y", localSpeed.z, 0.1f, Time.deltaTime);
         }
 
-        private void Attack(AttackController.AttackEvent e)
+        private void Attack(AttackHandler.AttackEvent e)
         {
             var percentage = e.percentage;
             var state = e.attackState;
 
             switch (state)
             {
-                case AttackController.AttackState.DRAW:
+                case AttackHandler.AttackState.DRAW:
                     animator.Play("Draw", upperLayerIdx, Mathf.Min(percentage, 1.0f));
                     break;
-                case AttackController.AttackState.OVERDRAW:
+                case AttackHandler.AttackState.OVERDRAW:
                     animator.Play("Overdraw", upperLayerIdx, Mathf.Min(percentage, 1.0f));
                     break;
-                case AttackController.AttackState.FIRE:
+                case AttackHandler.AttackState.FIRE:
                     animator.Play("Withdraw", upperLayerIdx, Mathf.Min(percentage, 1.0f));
                     break;
-                case AttackController.AttackState.WITHDRAW:
+                case AttackHandler.AttackState.WITHDRAW:
                     animator.Play("Withdraw", upperLayerIdx, Mathf.Min(percentage, 1.0f));
                     break;
-                case AttackController.AttackState.IDLE:
+                case AttackHandler.AttackState.IDLE:
                     animator.Play("Idle", upperLayerIdx);
                     break;
             }
@@ -93,8 +93,8 @@ namespace MyPoeLikeGame
 
             switch (state)
             {
-                case AttackController.AttackState.DRAW:
-                case AttackController.AttackState.OVERDRAW:
+                case AttackHandler.AttackState.DRAW:
+                case AttackHandler.AttackState.OVERDRAW:
                     animator.SetBool("Aiming", true);
                     break;
                 default:

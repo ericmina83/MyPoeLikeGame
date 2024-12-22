@@ -3,9 +3,9 @@ using R3;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-namespace MyPoeLikeGame
+namespace MyPoeLikeGame.Handlers
 {
-    public class AimingController : MonoBehaviour
+    public class AimingHandler : MonoBehaviour
     {
         public class LookAtPointEvent : IEvent
         {
