@@ -30,9 +30,8 @@ namespace MyPoeLikeGame
 
         private bool attacking = false;
 
-        private float attackFrequency = 1;
-
-        private float overdrawPeriod = 1;
+        [SerializeField]
+        private Skill skill;
 
         private float time = 0;
 
@@ -93,7 +92,7 @@ namespace MyPoeLikeGame
             }
             else if (currState == AttackState.DRAW)
             {
-                var drawPercentage = time * attackFrequency * 2f;
+                var drawPercentage = time * skill.attackFrequency * 2f;
 
                 Reactive.events.OnNext(new AttackEvent
                 {
@@ -117,7 +116,7 @@ namespace MyPoeLikeGame
             }
             else if (currState == AttackState.OVERDRAW)
             {
-                var drawPercentage = time / overdrawPeriod;
+                var drawPercentage = time / skill.overdrawPeriod;
 
                 Reactive.events.OnNext(new AttackEvent
                 {
@@ -142,11 +141,13 @@ namespace MyPoeLikeGame
                     sender = this
                 });
 
+                skill.Fire(transform);
+
                 currState = AttackState.WITHDRAW;
             }
             else if (currState == AttackState.WITHDRAW)
             {
-                var withdrawPercentage = time * attackFrequency * 2f;
+                var withdrawPercentage = time * skill.attackFrequency * 2f;
 
                 Reactive.events.OnNext(new AttackEvent
                 {
