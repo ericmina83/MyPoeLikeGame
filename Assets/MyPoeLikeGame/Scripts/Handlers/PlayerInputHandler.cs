@@ -16,6 +16,11 @@ namespace MyPoeLikeGame.Handlers
             public bool attacking;
         }
 
+        public class MovementEvent : IEvent
+        {
+            public Vector2 input;
+        }
+
         // Start is called once before the first execution of Update after the MonoBehaviour is created
         void Awake()
         {
@@ -28,6 +33,9 @@ namespace MyPoeLikeGame.Handlers
         {
             inputActions.Player.Attack.performed += Attack;
             inputActions.Player.Attack.canceled += Attack;
+
+            inputActions.Player.Move.performed += Move;
+            inputActions.Player.Move.canceled += Move;
             inputActions.Enable();
         }
 
@@ -36,6 +44,9 @@ namespace MyPoeLikeGame.Handlers
             inputActions.Disable();
             inputActions.Player.Attack.performed -= Attack;
             inputActions.Player.Attack.canceled -= Attack;
+
+            inputActions.Player.Move.performed -= Move;
+            inputActions.Player.Move.canceled -= Move;
         }
 
         private void Attack(InputAction.CallbackContext ctx)
@@ -60,6 +71,22 @@ namespace MyPoeLikeGame.Handlers
             {
                 currentAttackEvent.attacking = false;
             }
+        }
+
+        private void Move(InputAction.CallbackContext ctx)
+        {
+            var input = Vector2.zero;
+
+            if (ctx.performed)
+            {
+                input = ctx.ReadValue<Vector2>();
+            }
+
+            Reactive.events.OnNext(new MovementEvent
+            {
+                gameObjectId = gameObjectId,
+                input = input
+            });
         }
     }
 }

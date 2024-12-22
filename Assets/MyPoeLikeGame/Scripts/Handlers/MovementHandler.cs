@@ -1,7 +1,6 @@
 using R3;
 using System;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace MyPoeLikeGame.Handlers
 {
@@ -13,66 +12,45 @@ namespace MyPoeLikeGame.Handlers
             public Vector3 speed;
         }
 
-        PlayerInput inputAction;
-
         private CharacterController characterController;
 
         private Vector3 speed;
 
         private IDisposable subscription;
 
-        private string GameObjectId => gameObject.GetInstanceID().ToString();
+        private string gameObjectId;
 
         private void Awake()
         {
-            inputAction = new();
             characterController = GetComponent<CharacterController>();
+            gameObjectId = gameObject.GetInstanceID().ToString();
         }
 
         private void OnEnable()
         {
-            inputAction.Player.Move.performed += Move;
-            inputAction.Player.Move.canceled += Move;
-            inputAction.Enable();
-
             subscription = Reactive.events
-                .Where(e => e.gameObjectId == GameObjectId)
-                .OfType<IEvent, MovementEvent>()
-                .Select(e => e.speed).Subscribe((speed) =>
+                .Where(e => e.gameObjectId == gameObjectId)
+                .OfType<IEvent, PlayerInputHandler.MovementEvent>()
+                .Select(e => e.input).Subscribe((input) =>
                 {
-                    this.speed = speed;
+                    speed = new Vector3(input.x, 0, input.y);
+
+                    Reactive.events.OnNext(new MovementEvent
+                    {
+                        speed = speed,
+                        gameObjectId = gameObjectId
+                    });
                 });
         }
 
         private void OnDisable()
         {
-            inputAction.Disable();
-            inputAction.Player.Move.performed -= Move;
-            inputAction.Player.Move.canceled -= Move;
-
             subscription.Dispose();
         }
 
         private void Update()
         {
             characterController.SimpleMove(speed);
-        }
-
-        private void Move(InputAction.CallbackContext ctx)
-        {
-            var vec2 = ctx.ReadValue<Vector2>();
-            var speed = new Vector3(vec2.x, 0, vec2.y);
-
-            if (ctx.canceled)
-            {
-                speed = Vector3.zero;
-            }
-
-            Reactive.events.OnNext(new MovementEvent
-            {
-                gameObjectId = GameObjectId,
-                speed = speed
-            });
         }
     }
 }
