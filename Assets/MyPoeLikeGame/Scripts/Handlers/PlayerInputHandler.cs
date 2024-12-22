@@ -21,6 +21,11 @@ namespace MyPoeLikeGame.Handlers
             public Vector2 input;
         }
 
+        public class DodgeEvent : IEvent
+        {
+
+        }
+
         public class LookEvent : IEvent
         {
             public Vector2 mousePosition;
@@ -42,6 +47,8 @@ namespace MyPoeLikeGame.Handlers
             inputActions.Player.Move.canceled += Move;
 
             inputActions.Player.Look.performed += Look;
+
+            inputActions.Player.Dodge.performed += Dodge;
             inputActions.Enable();
         }
 
@@ -53,8 +60,10 @@ namespace MyPoeLikeGame.Handlers
 
             inputActions.Player.Move.performed -= Move;
             inputActions.Player.Move.canceled -= Move;
-            
+
             inputActions.Player.Look.performed -= Look;
+
+            inputActions.Player.Dodge.performed -= Dodge;
         }
 
         private void Attack(InputAction.CallbackContext ctx)
@@ -103,6 +112,14 @@ namespace MyPoeLikeGame.Handlers
             {
                 gameObjectId = gameObjectId,
                 mousePosition = ctx.ReadValue<Vector2>()
+            });
+        }
+
+        private void Dodge(InputAction.CallbackContext ctx)
+        {
+            Reactive.events.OnNext(new DodgeEvent
+            {
+                gameObjectId = gameObjectId,
             });
         }
     }

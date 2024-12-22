@@ -75,10 +75,10 @@ namespace MyPoeLikeGame
                     ""initialStateCheck"": false
                 },
                 {
-                    ""name"": ""Jump"",
+                    ""name"": ""Dodge"",
                     ""type"": ""Button"",
                     ""id"": ""24a19b51-09f6-4de2-a03f-362f2655943d"",
-                    ""expectedControlType"": ""Button"",
+                    ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
@@ -105,7 +105,7 @@ namespace MyPoeLikeGame
                     ""name"": ""Sprint"",
                     ""type"": ""Button"",
                     ""id"": ""e26d3d7b-5800-45a5-bb85-418aee97f539"",
-                    ""expectedControlType"": ""Button"",
+                    ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
@@ -359,7 +359,7 @@ namespace MyPoeLikeGame
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": ""Keyboard&Mouse"",
-                    ""action"": ""Jump"",
+                    ""action"": ""Dodge"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 },
@@ -370,7 +370,7 @@ namespace MyPoeLikeGame
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": ""Gamepad"",
-                    ""action"": ""Jump"",
+                    ""action"": ""Dodge"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 },
@@ -381,7 +381,7 @@ namespace MyPoeLikeGame
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": ""XR"",
-                    ""action"": ""Jump"",
+                    ""action"": ""Dodge"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 },
@@ -1040,7 +1040,7 @@ namespace MyPoeLikeGame
             m_Player_Attack = m_Player.FindAction("Attack", throwIfNotFound: true);
             m_Player_Interact = m_Player.FindAction("Interact", throwIfNotFound: true);
             m_Player_Crouch = m_Player.FindAction("Crouch", throwIfNotFound: true);
-            m_Player_Jump = m_Player.FindAction("Jump", throwIfNotFound: true);
+            m_Player_Dodge = m_Player.FindAction("Dodge", throwIfNotFound: true);
             m_Player_Previous = m_Player.FindAction("Previous", throwIfNotFound: true);
             m_Player_Next = m_Player.FindAction("Next", throwIfNotFound: true);
             m_Player_Sprint = m_Player.FindAction("Sprint", throwIfNotFound: true);
@@ -1129,7 +1129,7 @@ namespace MyPoeLikeGame
         private readonly InputAction m_Player_Attack;
         private readonly InputAction m_Player_Interact;
         private readonly InputAction m_Player_Crouch;
-        private readonly InputAction m_Player_Jump;
+        private readonly InputAction m_Player_Dodge;
         private readonly InputAction m_Player_Previous;
         private readonly InputAction m_Player_Next;
         private readonly InputAction m_Player_Sprint;
@@ -1143,7 +1143,7 @@ namespace MyPoeLikeGame
             public InputAction @Attack => m_Wrapper.m_Player_Attack;
             public InputAction @Interact => m_Wrapper.m_Player_Interact;
             public InputAction @Crouch => m_Wrapper.m_Player_Crouch;
-            public InputAction @Jump => m_Wrapper.m_Player_Jump;
+            public InputAction @Dodge => m_Wrapper.m_Player_Dodge;
             public InputAction @Previous => m_Wrapper.m_Player_Previous;
             public InputAction @Next => m_Wrapper.m_Player_Next;
             public InputAction @Sprint => m_Wrapper.m_Player_Sprint;
@@ -1172,9 +1172,9 @@ namespace MyPoeLikeGame
                 @Crouch.started += instance.OnCrouch;
                 @Crouch.performed += instance.OnCrouch;
                 @Crouch.canceled += instance.OnCrouch;
-                @Jump.started += instance.OnJump;
-                @Jump.performed += instance.OnJump;
-                @Jump.canceled += instance.OnJump;
+                @Dodge.started += instance.OnDodge;
+                @Dodge.performed += instance.OnDodge;
+                @Dodge.canceled += instance.OnDodge;
                 @Previous.started += instance.OnPrevious;
                 @Previous.performed += instance.OnPrevious;
                 @Previous.canceled += instance.OnPrevious;
@@ -1206,9 +1206,9 @@ namespace MyPoeLikeGame
                 @Crouch.started -= instance.OnCrouch;
                 @Crouch.performed -= instance.OnCrouch;
                 @Crouch.canceled -= instance.OnCrouch;
-                @Jump.started -= instance.OnJump;
-                @Jump.performed -= instance.OnJump;
-                @Jump.canceled -= instance.OnJump;
+                @Dodge.started -= instance.OnDodge;
+                @Dodge.performed -= instance.OnDodge;
+                @Dodge.canceled -= instance.OnDodge;
                 @Previous.started -= instance.OnPrevious;
                 @Previous.performed -= instance.OnPrevious;
                 @Previous.canceled -= instance.OnPrevious;
@@ -1399,7 +1399,7 @@ namespace MyPoeLikeGame
             void OnAttack(InputAction.CallbackContext context);
             void OnInteract(InputAction.CallbackContext context);
             void OnCrouch(InputAction.CallbackContext context);
-            void OnJump(InputAction.CallbackContext context);
+            void OnDodge(InputAction.CallbackContext context);
             void OnPrevious(InputAction.CallbackContext context);
             void OnNext(InputAction.CallbackContext context);
             void OnSprint(InputAction.CallbackContext context);
