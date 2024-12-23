@@ -15,26 +15,29 @@ namespace MyPoeLikeGame.Handlers
 
         private Vector3 speed = Vector3.zero;
         private int upperLayerIdx = -1;
+        private int dodgeLayerIdx = -1;
 
         private void Awake()
         {
             animator = GetComponent<Animator>();
             gameObjectId = gameObject.GetInstanceID().ToString();
             upperLayerIdx = animator.GetLayerIndex("Upper");
+            dodgeLayerIdx = animator.GetLayerIndex("Dodge");
         }
 
         private void OnEnable()
         {
             var observable = Reactive.events.Where(e => e.gameObjectId == gameObjectId);
 
-            var builder = new DisposableBuilder();
+            var builder = Disposable.CreateBuilder();
 
             observable.OfType<IEvent, MovementHandler.MovementEvent>()
                 .Select(e => e.speed)
-                .Subscribe(speed =>
-                {
-                    this.speed = speed;
-                })
+                .Subscribe(speed => this.speed = speed)
+                .AddTo(ref builder);
+
+            observable.OfType<IEvent, MovementHandler.DodgeEvent>()
+                .Subscribe(Dodge)
                 .AddTo(ref builder);
 
             observable.OfType<IEvent, AttackHandler.AttackEvent>()
@@ -100,6 +103,25 @@ namespace MyPoeLikeGame.Handlers
                 default:
                     animator.SetBool("Aiming", false);
                     break;
+            }
+        }
+
+        private void Dodge(MovementHandler.DodgeEvent e)
+        {
+            var dodgeState = e.dodgeState;
+
+            if (dodgeState == MovementHandler.DodgeEvent.DodgeState.DODGING)
+            {
+                var dodgeDirection = transform.worldToLocalMatrix.MultiplyVector(e.dodgeDirection);
+                animator.SetLayerWeight(dodgeLayerIdx, Mathf.Clamp01(e.percentage / 0.2f));
+                animator.Play("Dodge", dodgeLayerIdx, e.percentage);
+                animator.SetFloat("Dodge X", dodgeDirection.x);
+                animator.SetFloat("Dodge Y", dodgeDirection.z);
+            }
+            else
+            {
+                animator.SetLayerWeight(dodgeLayerIdx, 0.0f);
+                animator.Play("Idle", dodgeLayerIdx);
             }
         }
     }

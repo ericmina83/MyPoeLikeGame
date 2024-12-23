@@ -1,7 +1,6 @@
 using R3;
 using System;
 using UnityEngine;
-using UnityEngine.AI;
 
 namespace MyPoeLikeGame.Handlers
 {
@@ -10,7 +9,16 @@ namespace MyPoeLikeGame.Handlers
     {
         public class MovementEvent : IEvent
         {
+            public Vector2 inputSpeed;
             public Vector3 speed;
+        }
+
+        public class DodgeEvent : IEvent
+        {
+            public enum DodgeState { DODGING, END }
+            public DodgeState dodgeState;
+            public float percentage;
+            public Vector3 dodgeDirection;
         }
 
         private enum MovementState
@@ -64,15 +72,18 @@ namespace MyPoeLikeGame.Handlers
             observable.OfType<IEvent, PlayerInputHandler.MovementEvent>()
                 .Select(e => e.input).Subscribe((input) =>
                 {
-                    speed = movementSpeedBasic * (1.0f + movementSpeedIncrement) * new Vector3(input.x, 0, input.y);
+                    var inputSpeed = new Vector3(input.x, 0, input.y);
+                    speed = movementSpeedBasic * (1.0f + movementSpeedIncrement) * inputSpeed;
 
                     Reactive.events.OnNext(new MovementEvent
                     {
+                        inputSpeed = inputSpeed,
                         speed = speed,
                         gameObjectId = gameObjectId
                     });
                 }).AddTo(ref builder);
 
+            // Dodge
             observable.OfType<IEvent, PlayerInputHandler.DodgeEvent>()
                 .Subscribe(_ =>
                 {
@@ -114,9 +125,29 @@ namespace MyPoeLikeGame.Handlers
                 var dodgeSpeed = dodgeDistanceBasic * (1.0f + dodgeDistanceIncrement) / dodgePeriod;
                 characterController.SimpleMove(dodgeSpeed * dodgeDirection);
 
-                if (time > dodgePeriod)
+                var percentage = time / dodgePeriod;
+
+                if (percentage > 1.0f) // end of dodge
                 {
                     state = MovementState.MOVEMENT;
+
+                    Reactive.events.OnNext(new DodgeEvent
+                    {
+                        dodgeState = DodgeEvent.DodgeState.END,
+                        percentage = percentage,
+                        dodgeDirection = dodgeDirection,
+                        gameObjectId = gameObjectId
+                    });
+                }
+                else // dodging
+                {
+                    Reactive.events.OnNext(new DodgeEvent
+                    {
+                        dodgeState = DodgeEvent.DodgeState.DODGING,
+                        percentage = percentage,
+                        dodgeDirection = dodgeDirection,
+                        gameObjectId = gameObjectId
+                    });
                 }
             }
         }

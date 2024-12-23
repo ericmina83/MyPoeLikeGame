@@ -127,9 +127,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   movementSpeedBasic: 1
   movementSpeedIncrement: 0
-  dodgeDistanceBasic: 2
+  dodgeDistanceBasic: 2.5
   dodgeDistanceIncrement: 0
-  dodgePeriod: 0.25
+  dodgePeriod: 0.5
 --- !u!114 &3829739457614473893
 MonoBehaviour:
   m_ObjectHideFlags: 0
