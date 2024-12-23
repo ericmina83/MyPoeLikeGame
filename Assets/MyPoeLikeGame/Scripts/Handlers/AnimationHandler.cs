@@ -36,7 +36,7 @@ namespace MyPoeLikeGame.Handlers
                 .Subscribe(speed => this.speed = speed)
                 .AddTo(ref builder);
 
-            observable.OfType<IEvent, MovementHandler.DodgeEvent>()
+            observable.OfType<IEvent, DodgeHandler.DodgeEvent>()
                 .Subscribe(Dodge)
                 .AddTo(ref builder);
 
@@ -106,11 +106,11 @@ namespace MyPoeLikeGame.Handlers
             }
         }
 
-        private void Dodge(MovementHandler.DodgeEvent e)
+        private void Dodge(DodgeHandler.DodgeEvent e)
         {
-            var dodgeState = e.dodgeState;
+            var dodging = e.dodging;
 
-            if (dodgeState == MovementHandler.DodgeEvent.DodgeState.DODGING)
+            if (dodging)
             {
                 var dodgeDirection = transform.worldToLocalMatrix.MultiplyVector(e.dodgeDirection);
                 animator.SetLayerWeight(dodgeLayerIdx, Mathf.Clamp01(e.percentage / 0.2f));

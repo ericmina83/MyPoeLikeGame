@@ -13,21 +13,11 @@ namespace MyPoeLikeGame.Handlers
             public Vector3 speed;
         }
 
-        public class DodgeEvent : IEvent
-        {
-            public enum DodgeState { DODGING, END }
-            public DodgeState dodgeState;
-            public float percentage;
-            public Vector3 dodgeDirection;
-        }
-
         private enum MovementState
         {
             MOVEMENT,
             DODGE
         }
-
-        private MovementState state = MovementState.MOVEMENT;
 
         private CharacterController characterController;
 
@@ -37,24 +27,13 @@ namespace MyPoeLikeGame.Handlers
 
         private string gameObjectId;
 
+        private bool canMove = true;
+
         [SerializeField]
         private float movementSpeedBasic = 1.0f;
 
         [SerializeField]
         private float movementSpeedIncrement = 0.0f;
-
-        [SerializeField]
-        private float dodgeDistanceBasic = 1.5f;
-
-        [SerializeField]
-        private float dodgeDistanceIncrement = 0.0f;
-
-        [SerializeField]
-        private float dodgePeriod = 0.2f;
-
-        private float time = 0.0f;
-
-        private Vector3 dodgeDirection = Vector3.zero;
 
         private void Awake()
         {
@@ -83,29 +62,25 @@ namespace MyPoeLikeGame.Handlers
                     });
                 }).AddTo(ref builder);
 
-            // Dodge
-            observable.OfType<IEvent, PlayerInputHandler.DodgeEvent>()
-                .Subscribe(_ =>
-                {
-                    if (state == MovementState.MOVEMENT)
-                    {
-                        state = MovementState.DODGE;
-                        time = 0.0f;
-
-                        if (!Mathf.Approximately(speed.magnitude, 0.0f))
-                        {
-                            dodgeDirection = speed.normalized;
-                        }
-                        else
-                        {
-                            dodgeDirection = -transform.forward;
-                        }
-                    }
-                }).AddTo(ref builder);
+            observable.OfType<IEvent, CharacterStateHandler.StateEvent>()
+                .Select(e => e.state)
+                .Subscribe(StateHandler).AddTo(ref builder);
 
             subscription = builder.Build();
 
-            state = MovementState.MOVEMENT;
+            canMove = true;
+        }
+
+        private void StateHandler(CharacterStateHandler.CharacterState state)
+        {
+            if (state == CharacterStateHandler.CharacterState.DODGE)
+            {
+                canMove = false;
+            }
+            else
+            {
+                canMove = true;
+            }
         }
 
         private void OnDisable()
@@ -115,41 +90,10 @@ namespace MyPoeLikeGame.Handlers
 
         private void Update()
         {
-            if (state == MovementState.MOVEMENT)
-            {
-                characterController.SimpleMove(speed);
-            }
-            else if (state == MovementState.DODGE)
-            {
-                time += Time.deltaTime;
-                var dodgeSpeed = dodgeDistanceBasic * (1.0f + dodgeDistanceIncrement) / dodgePeriod;
-                characterController.SimpleMove(dodgeSpeed * dodgeDirection);
+            if (!canMove)
+                return;
 
-                var percentage = time / dodgePeriod;
-
-                if (percentage > 1.0f) // end of dodge
-                {
-                    state = MovementState.MOVEMENT;
-
-                    Reactive.events.OnNext(new DodgeEvent
-                    {
-                        dodgeState = DodgeEvent.DodgeState.END,
-                        percentage = percentage,
-                        dodgeDirection = dodgeDirection,
-                        gameObjectId = gameObjectId
-                    });
-                }
-                else // dodging
-                {
-                    Reactive.events.OnNext(new DodgeEvent
-                    {
-                        dodgeState = DodgeEvent.DodgeState.DODGING,
-                        percentage = percentage,
-                        dodgeDirection = dodgeDirection,
-                        gameObjectId = gameObjectId
-                    });
-                }
-            }
+            characterController.SimpleMove(speed);
         }
     }
 }

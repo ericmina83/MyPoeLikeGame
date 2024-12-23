@@ -1,6 +1,8 @@
 using R3;
 using System;
 using UnityEngine;
+using UnityEngine.PlayerLoop;
+using UnityEngine.TextCore.Text;
 
 namespace MyPoeLikeGame.Handlers
 {
@@ -20,13 +22,32 @@ namespace MyPoeLikeGame.Handlers
             gameObjectId = gameObject.GetInstanceID().ToString();
         }
 
+        private Quaternion? lookAtRotation = null;
+
+        private bool canAim = true;
+
         private void OnEnable()
         {
-            disposable = Reactive.events
-                .Where(e => e.gameObjectId == gameObjectId)
+            var observable = Reactive.events
+                .Where(e => e.gameObjectId == gameObjectId);
+
+            var builder = Disposable.CreateBuilder();
+
+            observable
                 .OfType<IEvent, PlayerInputHandler.LookEvent>()
                 .Select(e => e.mousePosition)
-                .Subscribe(Look);
+                .Subscribe(Look)
+                .AddTo(ref builder);
+
+            observable
+                .OfType<IEvent, CharacterStateHandler.StateEvent>()
+                .Select(e => e.state)
+                .Subscribe(StateHandler)
+                .AddTo(ref builder);
+
+            disposable = builder.Build();
+
+            canAim = true;
         }
 
         private void OnDisable()
@@ -34,11 +55,23 @@ namespace MyPoeLikeGame.Handlers
             disposable.Dispose();
         }
 
+        private void StateHandler(CharacterStateHandler.CharacterState state)
+        {
+            if (state == CharacterStateHandler.CharacterState.DODGE)
+            {
+                canAim = false;
+            }
+            else
+            {
+                canAim = true;
+            }
+        }
+
         private void Look(Vector2 mousePosition)
         {
             var ray = Camera.main.ScreenPointToRay(mousePosition);
 
-            var height = ray.origin.y;
+            var height = ray.origin.y - transform.position.y;
             var distance = Mathf.Abs(height / ray.direction.y);
 
             var point = ray.GetPoint(distance);
@@ -49,7 +82,17 @@ namespace MyPoeLikeGame.Handlers
                 point = hit.point;
             }
 
-            transform.LookAt(new Vector3(point.x, transform.position.y, point.z));
+            point.y = transform.position.y;
+
+            lookAtRotation = Quaternion.LookRotation(point - transform.position);
+        }
+
+        private void Update()
+        {
+            if (!canAim)
+                return;
+
+            transform.rotation = lookAtRotation ?? transform.rotation;
         }
     }
 }
