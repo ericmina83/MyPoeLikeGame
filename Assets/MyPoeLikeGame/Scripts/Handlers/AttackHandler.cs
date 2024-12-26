@@ -35,18 +35,38 @@ namespace MyPoeLikeGame.Handlers
 
         private float time = 0;
 
-        private string GameObjectId => gameObject.GetInstanceID().ToString();
+        private string gameObjectId;
 
-        IDisposable disposable;
+        private IDisposable disposable;
+
+        private bool canAttack = true;
 
         private void OnEnable()
         {
             prevState = AttackState.NONE;
             currState = AttackState.IDLE;
 
-            disposable = Reactive.events
+            gameObjectId = gameObject.GetInstanceID().ToString();
+
+            var observable = Reactive.events
+                .Where(e => e.gameObjectId == gameObjectId);
+
+            var builder = Disposable.CreateBuilder();
+
+            observable
                 .OfType<IEvent, PlayerInputHandler.AttackEvent>()
-                .Subscribe(e => nextInputEvent = e);
+                .Subscribe(e => nextInputEvent = e)
+                .AddTo(ref builder);
+
+            observable
+                .OfType<IEvent, CharacterStateHandler.StateEvent>()
+                .Select(e => e.state)
+                .Subscribe(StateHandler)
+                .AddTo(ref builder);
+
+            disposable = builder.Build();
+
+            canAttack = true;
         }
 
         private void OnDisable()
@@ -54,8 +74,32 @@ namespace MyPoeLikeGame.Handlers
             disposable.Dispose();
         }
 
+        private void StateHandler(CharacterStateHandler.CharacterState state)
+        {
+            if (state == CharacterStateHandler.CharacterState.DODGE)
+            {
+                canAttack = false;
+            }
+            else
+            {
+                canAttack = true;
+            }
+        }
+
         private void Update()
         {
+            if (!canAttack)
+            {
+                if (currState == AttackState.OVERDRAW)
+                {
+                    currState = AttackState.FIRE;
+                }
+                else if (currState != AttackState.FIRE)
+                {
+                    currState = AttackState.IDLE;
+                }
+            }
+
             if (prevState != currState)
             {
                 prevState = currState;
@@ -65,7 +109,7 @@ namespace MyPoeLikeGame.Handlers
                 {
                     Reactive.events.OnNext(new AttackEvent
                     {
-                        gameObjectId = GameObjectId,
+                        gameObjectId = gameObjectId,
                         attackState = AttackState.IDLE,
                         percentage = 0,
                         sender = this
@@ -88,7 +132,7 @@ namespace MyPoeLikeGame.Handlers
 
                 Reactive.events.OnNext(new AttackEvent
                 {
-                    gameObjectId = GameObjectId,
+                    gameObjectId = gameObjectId,
                     attackState = AttackState.DRAW,
                     percentage = drawPercentage,
                     sender = this
@@ -112,7 +156,7 @@ namespace MyPoeLikeGame.Handlers
 
                 Reactive.events.OnNext(new AttackEvent
                 {
-                    gameObjectId = GameObjectId,
+                    gameObjectId = gameObjectId,
                     attackState = AttackState.OVERDRAW,
                     percentage = drawPercentage,
                     sender = this
@@ -127,7 +171,7 @@ namespace MyPoeLikeGame.Handlers
             {
                 Reactive.events.OnNext(new AttackEvent
                 {
-                    gameObjectId = GameObjectId,
+                    gameObjectId = gameObjectId,
                     attackState = AttackState.FIRE,
                     percentage = 0,
                     sender = this
@@ -143,7 +187,7 @@ namespace MyPoeLikeGame.Handlers
 
                 Reactive.events.OnNext(new AttackEvent
                 {
-                    gameObjectId = GameObjectId,
+                    gameObjectId = gameObjectId,
                     attackState = AttackState.WITHDRAW,
                     percentage = withdrawPercentage,
                     sender = this

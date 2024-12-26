@@ -13,12 +13,6 @@ namespace MyPoeLikeGame.Handlers
             public Vector3 speed;
         }
 
-        private enum MovementState
-        {
-            MOVEMENT,
-            DODGE
-        }
-
         private CharacterController characterController;
 
         private Vector3 speed;
