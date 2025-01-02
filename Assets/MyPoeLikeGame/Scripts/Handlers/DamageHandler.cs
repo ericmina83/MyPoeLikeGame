@@ -12,6 +12,11 @@ namespace MyPoeLikeGame.Handlers
 
         private IDisposable disposable;
 
+        public class DamageEvent : IEvent
+        {
+            public int damageValue;
+        }
+
         private void Awake()
         {
             gameObjectId = gameObject.GetInstanceID().ToString();
@@ -40,7 +45,12 @@ namespace MyPoeLikeGame.Handlers
         {
             var damageValue = damage.DamageValue;
 
-            Debug.Log("TakeDamage: " + damageValue);
+
+            Reactive.events.OnNext(new DamageEvent
+            {
+                gameObjectId = gameObjectId,
+                damageValue = damageValue
+            });
         }
     }
 }
