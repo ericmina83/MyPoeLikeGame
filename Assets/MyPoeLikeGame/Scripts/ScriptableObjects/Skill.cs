@@ -21,14 +21,14 @@ namespace MyPoeLikeGame
 
         public void Fire(Transform sender)
         {
-            Reactive.events.OnNext(new Pool.PoolEvent
-            {
-                state = Pool.PoolEvent.PoolEventState.FIRE,
-                poolObject = projectilePrefab,
-                direction = direction,
-                offset = offset,
-                sender = sender,
-            });
+            // Reactive.events.OnNext(new Pool.PoolEvent
+            // {
+            //     state = Pool.PoolEvent.PoolEventState.FIRE,
+            //     poolObject = projectilePrefab,
+            //     direction = direction,
+            //     offset = offset,
+            //     sender = sender,
+            // });
         }
     }
 }

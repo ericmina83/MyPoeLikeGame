@@ -9,7 +9,7 @@ namespace MyPoeLikeGame
     {
         private readonly Dictionary<Transform, Stack<PoolObject>> pools = new();
 
-        public class PoolEvent : IEvent
+        public class PoolEvent
         {
             public enum PoolEventState
             {
@@ -33,27 +33,27 @@ namespace MyPoeLikeGame
 
         public void OnEnable()
         {
-            var observable = Reactive.events
-                .OfType<IEvent, PoolEvent>();
+            // var observable = Reactive.events
+            //     .OfType<IEvent, PoolEvent>();
 
-            var builder = Disposable.CreateBuilder();
+            // var builder = Disposable.CreateBuilder();
 
-            observable
-                .Where(e => e.state == PoolEvent.PoolEventState.FIRE)
-                .Subscribe(Fire)
-                .AddTo(ref builder);
+            // observable
+            //     .Where(e => e.state == PoolEvent.PoolEventState.FIRE)
+            //     .Subscribe(Fire)
+            //     .AddTo(ref builder);
 
-            observable.
-                Where(e => e.state == PoolEvent.PoolEventState.RECYCLE)
-                .Subscribe(Recycle)
-                .AddTo(ref builder);
+            // observable.
+            //     Where(e => e.state == PoolEvent.PoolEventState.RECYCLE)
+            //     .Subscribe(Recycle)
+            //     .AddTo(ref builder);
 
-            disposable = builder.Build();
+            // disposable = builder.Build();
         }
 
         public void OnDisable()
         {
-            disposable.Dispose();
+            // disposable.Dispose();
         }
 
         private void Fire(PoolEvent e)

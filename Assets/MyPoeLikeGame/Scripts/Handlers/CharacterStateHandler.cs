@@ -5,6 +5,8 @@ using UnityEngine;
 
 namespace MyPoeLikeGame.Handlers
 {
+    [RequireComponent(typeof(CharacterController))]
+    [RequireComponent(typeof(DodgeHandler))]
     public class CharacterStateHandler : MonoBehaviour
     {
         public enum CharacterState
@@ -14,31 +16,26 @@ namespace MyPoeLikeGame.Handlers
             DODGE,
         }
 
-        public class StateEvent : IEvent
-        {
-            public CharacterState state;
-        }
+        public readonly BehaviorSubject<CharacterState> stateObservable = new(CharacterState.IDLE); // The current state of the character
 
         private CharacterState state = CharacterState.IDLE;
 
-        private string gameObjectId;
-
         private IDisposable disposable;
+
+        private DodgeHandler dodgeHandler;
+
 
         private void Awake()
         {
-            gameObjectId = gameObject.GetInstanceID().ToString();
+            dodgeHandler = GetComponent<DodgeHandler>();
         }
 
         // Start is called once before the first execution of Update after the MonoBehaviour is created
         private void OnEnable()
         {
-            var observable = Reactive.events.Where(e => e.gameObjectId == gameObjectId);
-
             var builder = Disposable.CreateBuilder();
 
-            observable
-                .OfType<IEvent, DodgeHandler.DodgeEvent>()
+            dodgeHandler.dodgeEvent
                 .Subscribe(e =>
                 {
                     var dodging = e.dodging;
@@ -72,11 +69,7 @@ namespace MyPoeLikeGame.Handlers
             {
                 state = nextState;
 
-                Reactive.events.OnNext(new StateEvent
-                {
-                    gameObjectId = gameObjectId,
-                    state = state
-                });
+                stateObservable.OnNext(nextState);
             }
         }
     }

@@ -15,15 +15,6 @@ namespace MyPoeLikeGame
         protected void Die()
         {
             gameObject.SetActive(false);
-
-            Reactive.events.OnNext(
-                new Pool.PoolEvent
-                {
-                    state = Pool.PoolEvent.PoolEventState.RECYCLE,
-                    poolObject = this,
-                    sender = sender,
-                }
-            );
         }
     }
 }

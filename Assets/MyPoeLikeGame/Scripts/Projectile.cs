@@ -83,7 +83,7 @@ namespace MyPoeLikeGame
                 for (var i = 0; i < count; i++)
                 {
                     var hitInfo = results[i];
-                    candidatesList.Add(hitInfo.collider.gameObject.GetInstanceID().ToString());
+                    candidatesList.Add(hitInfo.collider.gameObject.GetEntityId().ToString());
                 }
             }
             else

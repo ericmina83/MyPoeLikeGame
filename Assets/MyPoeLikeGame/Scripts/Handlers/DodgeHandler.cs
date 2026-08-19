@@ -5,11 +5,13 @@ using UnityEngine;
 namespace MyPoeLikeGame.Handlers
 {
     [RequireComponent(typeof(CharacterController))]
+    [RequireComponent(typeof(MovementHandler))]
     public class DodgeHandler : MonoBehaviour
     {
-        public class DodgeEvent : IEvent
+        public enum DodgeState { DODGING, END }
+
+        public class DodgeEvent
         {
-            public enum DodgeState { DODGING, END }
             public bool dodging;
             public float percentage;
             public Vector3 dodgeDirection;
@@ -22,64 +24,52 @@ namespace MyPoeLikeGame.Handlers
         private float dodgeDistanceIncrement = 0.0f;
 
         [SerializeField]
-        private float dodgePeriod = 0.75f;
+        private float dodgePeriod = 0.1f;
 
         private float time = 0.0f;
 
-        private string gameObjectId = null;
-
-        private Vector2 inputDirection = Vector2.zero;
-        private Vector3 dodgeDirection;
+        private Vector3? dodgeDirection = null;
         private IDisposable disposable;
-        private bool dodging = false;
 
         private CharacterController characterController;
+        private MovementHandler movementHandler;
+
+        public readonly Subject<DodgeEvent> dodgeEvent = new();
+        public readonly Subject<bool> dodgeInput = new();
 
         private void Awake()
         {
             characterController = GetComponent<CharacterController>();
+            movementHandler = GetComponent<MovementHandler>();
         }
 
         private void OnEnable()
         {
-            gameObjectId = gameObject.GetInstanceID().ToString();
-
-            var observable = Reactive.events
-                .Where(e => e.gameObjectId == gameObjectId);
-
             var builder = Disposable.CreateBuilder();
 
-            observable
-                .OfType<IEvent, PlayerInputHandler.MovementEvent>()
-                .Subscribe(e =>
+            // Subscribe to the movement input only when dodgeInput emits
+            dodgeInput
+                .WithLatestFrom(movementHandler.movementInput, (input, direction) => direction)
+                .Subscribe(direction =>
                 {
-                    inputDirection = e.input;
-                }).AddTo(ref builder);
-
-            // Dodge
-            observable
-                .OfType<IEvent, PlayerInputHandler.DodgeEvent>()
-                .Subscribe(_ =>
-                {
-                    if (dodging)
+                    if (dodgeDirection != null)
                         return;
 
-                    if (!Mathf.Approximately(inputDirection.magnitude, 0.0f))
+                    if (!Mathf.Approximately(direction.magnitude, 0.0f))
                     {
-                        dodgeDirection = new Vector3(inputDirection.x, 0.0f, inputDirection.y);
+                        dodgeDirection = new Vector3(direction.x, 0.0f, direction.y);
                     }
                     else
                     {
                         dodgeDirection = -transform.forward;
                     }
 
-                    time = 0.0f;
-                    dodging = true;
+                    time = 0.0f; // Reset time for the new dodge
+                    dodgeDirection?.Normalize();
                 }).AddTo(ref builder);
 
-            disposable = builder.Build();
 
-            dodging = false;
+            disposable = builder.Build();
         }
 
         private void OnDisable()
@@ -89,37 +79,35 @@ namespace MyPoeLikeGame.Handlers
 
         private void Update()
         {
-            if (!dodging)
+            if (dodgeDirection == null)
                 return;
 
             time += Time.deltaTime;
             var dodgeSpeed = dodgeDistanceBasic * (1.0f + dodgeDistanceIncrement) / dodgePeriod;
-            characterController.SimpleMove(dodgeSpeed * dodgeDirection);
+            characterController.SimpleMove(dodgeSpeed * dodgeDirection.Value);
 
-            transform.rotation = Quaternion.LookRotation(dodgeDirection);
+            transform.rotation = Quaternion.LookRotation(dodgeDirection.Value);
 
             var percentage = time / dodgePeriod;
 
             if (percentage > 1.0f) // end of dodge
             {
-                dodging = false;
-
-                Reactive.events.OnNext(new DodgeEvent
+                dodgeEvent.OnNext(new DodgeEvent
                 {
                     dodging = false,
                     percentage = percentage,
-                    dodgeDirection = dodgeDirection,
-                    gameObjectId = gameObjectId
+                    dodgeDirection = dodgeDirection.Value,
                 });
+
+                dodgeDirection = null;
             }
             else // dodging
             {
-                Reactive.events.OnNext(new DodgeEvent
+                dodgeEvent.OnNext(new DodgeEvent
                 {
                     dodging = true,
                     percentage = percentage,
-                    dodgeDirection = dodgeDirection,
-                    gameObjectId = gameObjectId
+                    dodgeDirection = dodgeDirection.Value,
                 });
             }
         }

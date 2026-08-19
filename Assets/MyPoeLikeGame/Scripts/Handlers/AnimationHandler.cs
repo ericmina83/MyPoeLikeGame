@@ -20,31 +20,31 @@ namespace MyPoeLikeGame.Handlers
         private void Awake()
         {
             animator = GetComponent<Animator>();
-            gameObjectId = gameObject.GetInstanceID().ToString();
+            gameObjectId = gameObject.GetEntityId ().ToString();
             upperLayerIdx = animator.GetLayerIndex("Upper");
             dodgeLayerIdx = animator.GetLayerIndex("Dodge");
         }
 
         private void OnEnable()
         {
-            var observable = Reactive.events.Where(e => e.gameObjectId == gameObjectId);
+            //     var observable = Reactive.events.Where(e => e.gameObjectId == gameObjectId);
 
-            var builder = Disposable.CreateBuilder();
+            //     var builder = Disposable.CreateBuilder();
 
-            observable.OfType<IEvent, MovementHandler.MovementEvent>()
-                .Select(e => e.speed)
-                .Subscribe(speed => this.speed = speed)
-                .AddTo(ref builder);
+            //     observable.OfType<IEvent, MovementHandler.MovementEvent>()
+            //         .Select(e => e.speed)
+            //         .Subscribe(speed => this.speed = speed)
+            //         .AddTo(ref builder);
 
-            observable.OfType<IEvent, DodgeHandler.DodgeEvent>()
-                .Subscribe(Dodge)
-                .AddTo(ref builder);
+            //     observable.OfType<IEvent, DodgeHandler.DodgeEvent>()
+            //         .Subscribe(Dodge)
+            //         .AddTo(ref builder);
 
-            observable.OfType<IEvent, AttackHandler.AttackEvent>()
-                .Subscribe(Attack)
-                .AddTo(ref builder);
+            //     observable.OfType<IEvent, AttackHandler.AttackEvent>()
+            //         .Subscribe(Attack)
+            //         .AddTo(ref builder);
 
-            disposable = builder.Build();
+            //     disposable = builder.Build();
         }
 
         private void OnDisable()

@@ -4,6 +4,7 @@ using UnityEngine;
 
 namespace MyPoeLikeGame.Handlers
 {
+    [RequireComponent(typeof(CharacterStateHandler))]
     public class AttackHandler : MonoBehaviour
     {
         public enum AttackState
@@ -16,57 +17,56 @@ namespace MyPoeLikeGame.Handlers
             WITHDRAW
         }
 
-        public class AttackEvent : IEvent
+        public class AttackEvent
         {
             public AttackState attackState;
             public float percentage;
-            public AttackHandler sender;
         }
 
         private AttackState prevState = AttackState.NONE;
 
         private AttackState currState = AttackState.IDLE;
 
-        private PlayerInputHandler.AttackEvent nextInputEvent = null;
-        private PlayerInputHandler.AttackEvent currInputEvent = null;
 
         [SerializeField]
         private Skill skill;
 
         private float time = 0;
 
-        private string gameObjectId;
-
         private IDisposable disposable;
 
-        private bool canAttack = true;
+        public readonly BehaviorSubject<bool> attackInput = new(false);
+
+        private bool attacking = false;
+
+        private bool canAttack = false;
+
+        [NonSerialized]
+        public BehaviorSubject<AttackEvent> attackEvent = new(new AttackEvent
+        {
+            attackState = AttackState.IDLE,
+            percentage = 0
+        });
+
+        private CharacterStateHandler characterStateHandler;
+
+        private void Awake()
+        {
+            characterStateHandler = GetComponent<CharacterStateHandler>();
+        }
 
         private void OnEnable()
         {
-            prevState = AttackState.NONE;
-            currState = AttackState.IDLE;
-
-            gameObjectId = gameObject.GetInstanceID().ToString();
-
-            var observable = Reactive.events
-                .Where(e => e.gameObjectId == gameObjectId);
-
             var builder = Disposable.CreateBuilder();
 
-            observable
-                .OfType<IEvent, PlayerInputHandler.AttackEvent>()
-                .Subscribe(e => nextInputEvent = e)
-                .AddTo(ref builder);
+            characterStateHandler.stateObservable.Subscribe(StateHandler).AddTo(ref builder);
 
-            observable
-                .OfType<IEvent, CharacterStateHandler.StateEvent>()
-                .Select(e => e.state)
-                .Subscribe(StateHandler)
-                .AddTo(ref builder);
+            attackInput.Subscribe((input) =>
+            {
+                attacking = input;
+            }).AddTo(ref builder);
 
             disposable = builder.Build();
-
-            canAttack = true;
         }
 
         private void OnDisable()
@@ -107,40 +107,36 @@ namespace MyPoeLikeGame.Handlers
 
                 if (currState == AttackState.IDLE)
                 {
-                    Reactive.events.OnNext(new AttackEvent
+                    attackEvent.OnNext(new AttackEvent
                     {
-                        gameObjectId = gameObjectId,
                         attackState = AttackState.IDLE,
                         percentage = 0,
-                        sender = this
                     });
                 }
             }
 
             if (currState == AttackState.IDLE)
             {
-                if (nextInputEvent != null)
-                {
-                    currInputEvent = nextInputEvent;
-                    nextInputEvent = null;
-                    currState = AttackState.DRAW;
-                }
+                // if (nextInputEvent != null)
+                // {
+                //     currInputEvent = nextInputEvent;
+                //     nextInputEvent = null;
+                //     currState = AttackState.DRAW;
+                // }
             }
             else if (currState == AttackState.DRAW)
             {
                 var drawPercentage = time * skill.attackFrequency * 2f;
 
-                Reactive.events.OnNext(new AttackEvent
+                attackEvent.OnNext(new AttackEvent
                 {
-                    gameObjectId = gameObjectId,
                     attackState = AttackState.DRAW,
                     percentage = drawPercentage,
-                    sender = this
                 });
 
                 if (drawPercentage > 1.0f)
                 {
-                    if (currInputEvent.attacking)
+                    if (attacking)
                     {
                         currState = AttackState.OVERDRAW;
                     }
@@ -154,27 +150,23 @@ namespace MyPoeLikeGame.Handlers
             {
                 var drawPercentage = time / skill.overdrawPeriod;
 
-                Reactive.events.OnNext(new AttackEvent
+                attackEvent.OnNext(new AttackEvent
                 {
-                    gameObjectId = gameObjectId,
                     attackState = AttackState.OVERDRAW,
                     percentage = drawPercentage,
-                    sender = this
                 });
 
-                if (!currInputEvent.attacking)
+                if (!attacking)
                 {
                     currState = AttackState.FIRE;
                 }
             }
             else if (currState == AttackState.FIRE)
             {
-                Reactive.events.OnNext(new AttackEvent
+                attackEvent.OnNext(new AttackEvent
                 {
-                    gameObjectId = gameObjectId,
                     attackState = AttackState.FIRE,
                     percentage = 0,
-                    sender = this
                 });
 
                 skill.Fire(transform);
@@ -185,13 +177,13 @@ namespace MyPoeLikeGame.Handlers
             {
                 var withdrawPercentage = time * skill.attackFrequency * 2f;
 
-                Reactive.events.OnNext(new AttackEvent
-                {
-                    gameObjectId = gameObjectId,
-                    attackState = AttackState.WITHDRAW,
-                    percentage = withdrawPercentage,
-                    sender = this
-                });
+                // Reactive.events.OnNext(new AttackEvent
+                // {
+                //     gameObjectId = gameObjectId,
+                //     attackState = AttackState.WITHDRAW,
+                //     percentage = withdrawPercentage,
+                //     sender = this
+                // });
 
                 if (withdrawPercentage >= 1.0f)
                 {

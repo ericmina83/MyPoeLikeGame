@@ -1,0 +1,7 @@
+namespace MyPoeLikeGame
+{
+    class PoolObjectService
+    {
+
+    }
+}

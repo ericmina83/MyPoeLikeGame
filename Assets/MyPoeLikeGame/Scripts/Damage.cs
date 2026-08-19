@@ -9,7 +9,7 @@ namespace MyPoeLikeGame
 
         public int DamageValue => damageValue;
 
-        public class DamageEvent : IEvent
+        public class DamageEvent
         {
             public Damage damage;
         }
@@ -22,11 +22,13 @@ namespace MyPoeLikeGame
             {
                 foreach (var gameObjectId in gameObjectIds)
                 {
-                    Reactive.events.OnNext(new DamageEvent()
-                    {
-                        gameObjectId = gameObjectId,
-                        damage = this,
-                    });
+                    // TODO: Reactive was removed; wire this up via the new R3-based event pattern
+                    // (see DamageHandler.cs, HpHandler.cs for other pending pieces of this chain).
+                    // damageEvent.OnNext(new DamageEvent()
+                    // {
+                    //     gameObjectId = gameObjectId,
+                    //     damage = this,
+                    // });
                 }
                 Die();
             }

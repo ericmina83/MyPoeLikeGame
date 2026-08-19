@@ -5,11 +5,12 @@ using UnityEngine;
 namespace MyPoeLikeGame.Handlers
 {
     [RequireComponent(typeof(CharacterController))]
+    [RequireComponent(typeof(CharacterStateHandler))]
     public class MovementHandler : MonoBehaviour
     {
-        public class MovementEvent : IEvent
+        public struct MovementData
         {
-            public Vector2 inputSpeed;
+            public Vector2 input;
             public Vector3 speed;
         }
 
@@ -19,46 +20,39 @@ namespace MyPoeLikeGame.Handlers
 
         private IDisposable subscription;
 
-        private string gameObjectId;
-
         private bool canMove = true;
 
+        private CharacterStateHandler stateHandler;
+
         [SerializeField]
-        private float movementSpeedBasic = 1.0f;
+        private float movementSpeedBasic = 1.75f;
 
         [SerializeField]
         private float movementSpeedIncrement = 0.0f;
 
+        public readonly Subject<Vector2> movementInput = new();
+        public Observable<MovementData> MovementEvent => movementInput.Select((input) =>
+        {
+            return new MovementData
+            {
+                input = input,
+                speed = movementSpeedBasic * (1.0f + movementSpeedIncrement) * new Vector3(input.x, 0, input.y),
+            };
+        });
+
         private void Awake()
         {
             characterController = GetComponent<CharacterController>();
-            gameObjectId = gameObject.GetInstanceID().ToString();
+            stateHandler = GetComponent<CharacterStateHandler>();
         }
 
         private void OnEnable()
         {
             var builder = Disposable.CreateBuilder();
 
-            var observable = Reactive.events
-                .Where(e => e.gameObjectId == gameObjectId);
+            MovementEvent.Subscribe((evn) => speed = evn.speed).AddTo(ref builder);
 
-            observable.OfType<IEvent, PlayerInputHandler.MovementEvent>()
-                .Select(e => e.input).Subscribe((input) =>
-                {
-                    var inputSpeed = new Vector3(input.x, 0, input.y);
-                    speed = movementSpeedBasic * (1.0f + movementSpeedIncrement) * inputSpeed;
-
-                    Reactive.events.OnNext(new MovementEvent
-                    {
-                        inputSpeed = inputSpeed,
-                        speed = speed,
-                        gameObjectId = gameObjectId
-                    });
-                }).AddTo(ref builder);
-
-            observable.OfType<IEvent, CharacterStateHandler.StateEvent>()
-                .Select(e => e.state)
-                .Subscribe(StateHandler).AddTo(ref builder);
+            stateHandler.stateObservable.Subscribe(StateHandler).AddTo(ref builder);
 
             subscription = builder.Build();
 
@@ -87,7 +81,7 @@ namespace MyPoeLikeGame.Handlers
             if (!canMove)
                 return;
 
-            characterController.SimpleMove(speed);
+            characterController.SimpleMove(movementSpeedBasic * (1 + movementSpeedIncrement) * speed);
         }
     }
 }

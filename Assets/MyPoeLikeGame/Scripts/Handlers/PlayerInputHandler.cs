@@ -1,3 +1,4 @@
+using R3;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -7,35 +8,20 @@ namespace MyPoeLikeGame.Handlers
     {
         private PlayerInput inputActions;
 
-        private string gameObjectId = null;
+        private readonly Subject<Vector2> lookInput = new();
+        private readonly Subject<bool> dodgeInput = new();
+        private readonly Subject<Vector2> movementInput = new();
+        private readonly Subject<bool> attackInput = new();
 
-        private AttackEvent currentAttackEvent;
-
-        public class AttackEvent : IEvent
-        {
-            public bool attacking;
-        }
-
-        public class MovementEvent : IEvent
-        {
-            public Vector2 input;
-        }
-
-        public class DodgeEvent : IEvent
-        {
-
-        }
-
-        public class LookEvent : IEvent
-        {
-            public Vector2 mousePosition;
-        }
+        public Observable<Vector2> LookInput => lookInput.AsObservable();
+        public Observable<bool> DodgeInput => dodgeInput.AsObservable();
+        public Observable<Vector2> MovementInput => movementInput.AsObservable();
+        public Observable<bool> AttackInput => attackInput.AsObservable();
 
         // Start is called once before the first execution of Update after the MonoBehaviour is created
         void Awake()
         {
             inputActions = new();
-            gameObjectId = gameObject.GetInstanceID().ToString();
         }
 
         private void OnEnable()
@@ -70,23 +56,12 @@ namespace MyPoeLikeGame.Handlers
         {
             if (ctx.performed)
             {
-                if (currentAttackEvent != null)
-                {
-                    currentAttackEvent.attacking = false;
-                }
-
-                currentAttackEvent = new AttackEvent
-                {
-                    attacking = true,
-                    gameObjectId = gameObjectId,
-                };
-
-                Reactive.events.OnNext(currentAttackEvent);
+                attackInput.OnNext(true);
             }
 
             if (ctx.canceled)
             {
-                currentAttackEvent.attacking = false;
+                attackInput.OnNext(false);
             }
         }
 
@@ -99,28 +74,17 @@ namespace MyPoeLikeGame.Handlers
                 input = ctx.ReadValue<Vector2>();
             }
 
-            Reactive.events.OnNext(new MovementEvent
-            {
-                gameObjectId = gameObjectId,
-                input = input
-            });
+            movementInput.OnNext(input);
         }
 
         private void Look(InputAction.CallbackContext ctx)
         {
-            Reactive.events.OnNext(new LookEvent
-            {
-                gameObjectId = gameObjectId,
-                mousePosition = ctx.ReadValue<Vector2>()
-            });
+            lookInput.OnNext(ctx.ReadValue<Vector2>());
         }
 
         private void Dodge(InputAction.CallbackContext ctx)
         {
-            Reactive.events.OnNext(new DodgeEvent
-            {
-                gameObjectId = gameObjectId,
-            });
+            dodgeInput.OnNext(true);
         }
     }
 }
