@@ -81,7 +81,7 @@ namespace MyPoeLikeGame.Handlers
             if (!canMove)
                 return;
 
-            characterController.SimpleMove(movementSpeedBasic * (1 + movementSpeedIncrement) * speed);
+            characterController.SimpleMove(speed);
         }
     }
 }
