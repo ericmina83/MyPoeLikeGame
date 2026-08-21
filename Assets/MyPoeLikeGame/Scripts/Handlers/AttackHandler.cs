@@ -1,9 +1,15 @@
 using System;
+using MyPoeLikeGame.Combat;
 using R3;
 using UnityEngine;
 
 namespace MyPoeLikeGame.Handlers
 {
+    /// <summary>
+    /// 攻擊的四階段狀態機。只負責推進進度與決定轉換；
+    /// 「這種攻擊實際上會發生什麼事」屬於 <see cref="AttackBehaviour"/>。
+    /// 設計說明見 AttackStateMachine.md。
+    /// </summary>
     [RequireComponent(typeof(CharacterStateHandler))]
     public class AttackHandler : MonoBehaviour
     {
@@ -20,18 +26,29 @@ namespace MyPoeLikeGame.Handlers
         public class AttackEvent
         {
             public AttackState attackState;
-            public float percentage;
+
+            /// <summary>該狀態自己的 0→1 進度，滿了就換狀態。</summary>
+            public float progress;
+
+            /// <summary>蓄力強度。只在進過 OVERDRAW 之後有意義，可以超過 1（過蓄）。</summary>
+            public float chargeRatio;
         }
+
+        private const float MinAttackFrequency = 0.0001f;
+        private const float MinFullChargeTime = 0.0001f;
+
+        [SerializeField]
+        private Skill skill;
 
         private AttackState prevState = AttackState.NONE;
 
         private AttackState currState = AttackState.IDLE;
 
-
-        [SerializeField]
-        private Skill skill;
-
+        /// <summary>目前狀態已經停留的秒數。</summary>
         private float time = 0;
+
+        /// <summary>離開 OVERDRAW 時保留下來，供 FIRE 使用；回到 IDLE 時歸零。</summary>
+        private float chargeRatio = 0f;
 
         private IDisposable disposable;
 
@@ -45,7 +62,8 @@ namespace MyPoeLikeGame.Handlers
         public BehaviorSubject<AttackEvent> attackEvent = new(new AttackEvent
         {
             attackState = AttackState.IDLE,
-            percentage = 0
+            progress = 0,
+            chargeRatio = 0
         });
 
         private CharacterStateHandler characterStateHandler;
@@ -86,8 +104,67 @@ namespace MyPoeLikeGame.Handlers
             }
         }
 
+        /// <summary>
+        /// DRAW / FIRE / WITHDRAW 依權重瓜分一個 1 / attackFrequency 的循環。
+        /// OVERDRAW 不屬於循環，不走這裡。
+        /// </summary>
+        private float PeriodOf(AttackState state)
+        {
+            var total = skill.drawWeight + skill.fireWeight + skill.withdrawWeight;
+            if (total <= 0f)
+                return 0f;
+
+            var weight = state switch
+            {
+                AttackState.DRAW => skill.drawWeight,
+                AttackState.FIRE => skill.fireWeight,
+                AttackState.WITHDRAW => skill.withdrawWeight,
+                _ => 0f,
+            };
+            if (weight <= 0f)
+                return 0f;
+
+            var cycle = 1f / Mathf.Max(skill.attackFrequency, MinAttackFrequency);
+            return cycle * weight / total;
+        }
+
+        /// <summary>
+        /// 回傳目前狀態的進度與是否已完成。權重為 0 的狀態視為立即完成，
+        /// 但進度回報 0 —— 動畫應該停在起點而不是終點。
+        /// </summary>
+        private (float progress, bool done) Advance(AttackState state)
+        {
+            var period = PeriodOf(state);
+            if (period <= 0f)
+                return (0f, true);
+
+            var progress = time / period;
+            return (progress, progress >= 1f);
+        }
+
+        private void Emit(AttackState state, float progress)
+        {
+            attackEvent.OnNext(new AttackEvent
+            {
+                attackState = state,
+                progress = progress,
+                chargeRatio = chargeRatio,
+            });
+        }
+
+        // 投射物生成器尚未存在（計畫 Phase 15、16）。接上之前 FIRE 會正常運轉，
+        // 只是不會有投射物飛出來。
+        private AttackContext Context() => new(transform, skill, chargeRatio, null);
+
         private void Update()
         {
+            if (skill == null)
+                return;
+
+            var behaviour = AttackBehaviours.Resolve(skill.type);
+            if (behaviour == null)
+                return;
+
             if (!canAttack)
             {
                 if (currState == AttackState.OVERDRAW)
@@ -107,83 +184,79 @@ namespace MyPoeLikeGame.Handlers
 
                 if (currState == AttackState.IDLE)
                 {
-                    attackEvent.OnNext(new AttackEvent
-                    {
-                        attackState = AttackState.IDLE,
-                        percentage = 0,
-                    });
+                    chargeRatio = 0f;
+                    Emit(AttackState.IDLE, 0f);
+                }
+                else if (currState == AttackState.FIRE)
+                {
+                    behaviour.OnEnterFire(Context());
                 }
             }
 
-            if (currState == AttackState.IDLE)
+            switch (currState)
             {
-                if (attacking)
-                {
-                    currState = AttackState.DRAW;
-                }
-            }
-            else if (currState == AttackState.DRAW)
-            {
-                var drawPercentage = time * skill.attackFrequency * 2f;
-
-                attackEvent.OnNext(new AttackEvent
-                {
-                    attackState = AttackState.DRAW,
-                    percentage = drawPercentage,
-                });
-
-                if (drawPercentage > 1.0f)
+                case AttackState.IDLE:
                 {
                     if (attacking)
                     {
-                        currState = AttackState.OVERDRAW;
+                        currState = AttackState.DRAW;
                     }
-                    else
+                    break;
+                }
+
+                case AttackState.DRAW:
+                {
+                    var (progress, done) = Advance(AttackState.DRAW);
+                    Emit(AttackState.DRAW, progress);
+
+                    if (done)
+                    {
+                        currState = behaviour.CanOverdraw && attacking
+                            ? AttackState.OVERDRAW
+                            : AttackState.FIRE;
+                    }
+                    break;
+                }
+
+                case AttackState.OVERDRAW:
+                {
+                    // 強度：共用邏輯，餵動畫與傷害，可以超過 1。
+                    chargeRatio = time / Mathf.Max(skill.fullChargeTime, MinFullChargeTime);
+
+                    // 完成度：由行為決定，滿了就結束滿蓄。預設恆為 0 = 無限 hold。
+                    var completion = behaviour.OverdrawProgress(Context(), time);
+                    Emit(AttackState.OVERDRAW, completion);
+
+                    if (completion >= 1f || !attacking)
                     {
                         currState = AttackState.FIRE;
                     }
+                    break;
                 }
-            }
-            else if (currState == AttackState.OVERDRAW)
-            {
-                var drawPercentage = time / skill.overdrawPeriod;
 
-                attackEvent.OnNext(new AttackEvent
+                case AttackState.FIRE:
                 {
-                    attackState = AttackState.OVERDRAW,
-                    percentage = drawPercentage,
-                });
+                    var (progress, done) = Advance(AttackState.FIRE);
+                    Emit(AttackState.FIRE, progress);
+                    behaviour.OnFireTick(Context(), progress);
 
-                if (!attacking)
-                {
-                    currState = AttackState.FIRE;
+                    if (done)
+                    {
+                        currState = AttackState.WITHDRAW;
+                    }
+                    break;
                 }
-            }
-            else if (currState == AttackState.FIRE)
-            {
-                attackEvent.OnNext(new AttackEvent
+
+                case AttackState.WITHDRAW:
                 {
-                    attackState = AttackState.FIRE,
-                    percentage = 0,
-                });
+                    var (progress, done) = Advance(AttackState.WITHDRAW);
+                    Emit(AttackState.WITHDRAW, progress);
 
-                skill.Fire(transform);
-
-                currState = AttackState.WITHDRAW;
-            }
-            else if (currState == AttackState.WITHDRAW)
-            {
-                var withdrawPercentage = time * skill.attackFrequency * 2f;
-
-                attackEvent.OnNext(new AttackEvent
-                {
-                    attackState = AttackState.WITHDRAW,
-                    percentage = withdrawPercentage,
-                });
-
-                if (withdrawPercentage >= 1.0f)
-                {
-                    currState = AttackState.IDLE;
+                    if (done)
+                    {
+                        currState = AttackState.IDLE;
+                    }
+                    break;
                 }
             }
 

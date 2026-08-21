@@ -70,8 +70,13 @@ namespace MyPoeLikeGame.Handlers
 
         private void Attack(AttackHandler.AttackEvent e)
         {
-            var percentage = e.percentage;
             var state = e.attackState;
+
+            // OVERDRAW 用「強度」驅動動畫，讓滿蓄的姿勢隨蓄力推進；
+            // 其餘狀態用自己的進度。兩者的差別見 AttackStateMachine.md。
+            var percentage = state == AttackHandler.AttackState.OVERDRAW
+                ? e.chargeRatio
+                : e.progress;
 
             switch (state)
             {

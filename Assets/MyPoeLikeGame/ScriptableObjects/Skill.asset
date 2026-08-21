@@ -12,10 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f00af63f93ff51448affb33b9e8024a3, type: 3}
   m_Name: Skill
   m_EditorClassIdentifier: 
-  attackFrequency: 1
   skillName: New Skill
+  type: 0
   projectilePrefab: {fileID: 7870255344204045499, guid: 9a672f80130d7ae47bc2ad1ff5dde073, type: 3}
   offset: {x: 0, y: 1, z: 1}
   direction: {x: 0, y: 0, z: 1}
-  projectileSpeed: 1
-  overdrawPeriod: 1
+  attackFrequency: 1
+  drawWeight: 1
+  fireWeight: 0
+  withdrawWeight: 1
+  fullChargeTime: 1
