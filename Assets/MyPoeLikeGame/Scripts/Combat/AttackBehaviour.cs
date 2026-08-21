@@ -33,8 +33,27 @@ namespace MyPoeLikeGame.Combat
         /// <summary>進入 FIRE 的第一幀。投射物型的攻擊在這裡生成一次。</summary>
         public virtual void OnEnterFire(in AttackContext ctx) { }
 
+        // ── 各階段的每幀掛勾 ──────────────────────────────────────────
+        // 全部在該階段的轉換判斷「之前」呼叫，所以進度滿的那一幀也收得到。
+        // 這些是做事的地方（扣耐力、開判定窗、放特效），不負責回報要不要換狀態
+        // ——換狀態一律由共用邏輯依進度決定。
+
+        /// <summary>DRAW 期間每幀呼叫。前搖的耐力消耗、蓄力特效放這裡。</summary>
+        public virtual void OnDrawTick(in AttackContext ctx, float progress) { }
+
+        /// <summary>
+        /// OVERDRAW 期間每幀呼叫。強度可由 <see cref="AttackContext.ChargeRatio"/> 取得。
+        /// </summary>
+        /// <param name="progress">
+        /// <see cref="OverdrawProgress"/> 回報的完成度，不是強度。
+        /// </param>
+        public virtual void OnOverdrawTick(in AttackContext ctx, float progress) { }
+
         /// <summary>FIRE 期間每幀呼叫。近戰揮擊型的判定窗在這裡維持。</summary>
         public virtual void OnFireTick(in AttackContext ctx, float progress) { }
+
+        /// <summary>WITHDRAW 期間每幀呼叫。後搖的破綻狀態放這裡。</summary>
+        public virtual void OnWithdrawTick(in AttackContext ctx, float progress) { }
     }
 
     /// <summary>

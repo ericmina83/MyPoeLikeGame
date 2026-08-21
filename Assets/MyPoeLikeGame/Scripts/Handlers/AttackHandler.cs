@@ -208,6 +208,7 @@ namespace MyPoeLikeGame.Handlers
                 {
                     var (progress, done) = Advance(AttackState.DRAW);
                     Emit(AttackState.DRAW, progress);
+                    behaviour.OnDrawTick(Context(), progress);
 
                     if (done)
                     {
@@ -226,7 +227,10 @@ namespace MyPoeLikeGame.Handlers
                     // 完成度：由行為決定，滿了就結束滿蓄。預設恆為 0 = 無限 hold。
                     var completion = behaviour.OverdrawProgress(Context(), time);
                     Emit(AttackState.OVERDRAW, completion);
+                    behaviour.OnOverdrawTick(Context(), completion);
 
+                    // 放手一定出得來，這是共用邏輯保證的底線；
+                    // completion 是型態可以加碼的提前結束條件（耐力耗盡、過蓄上限）。
                     if (completion >= 1f || !attacking)
                     {
                         currState = AttackState.FIRE;
@@ -251,6 +255,7 @@ namespace MyPoeLikeGame.Handlers
                 {
                     var (progress, done) = Advance(AttackState.WITHDRAW);
                     Emit(AttackState.WITHDRAW, progress);
+                    behaviour.OnWithdrawTick(Context(), progress);
 
                     if (done)
                     {
