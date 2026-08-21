@@ -281,14 +281,15 @@ public readonly struct AttackContext
 
 ## TODO
 
-**這一輪要做**
+**已完成**（`7ae2fb0`）
 
-- [ ] 抽出 `AttackBehaviour` 多型，新增 `RangeChargeAttackBehaviour`（= 目前寫死的邏輯）
-- [ ] `Skill` 加 `type`，週期改成 `attackFrequency` + 三個權重（`1 : 0 : 1` 還原現狀）
-- [ ] `AttackHandler` 改用多型分派，`CanOverdraw` 取自行為
-- [ ] `OVERDRAW` 分出「強度」`chargeRatio` 與「完成度」`overdrawProgress`
-- [ ] 改名：`Skill.overdrawPeriod` → `fullChargeTime`（asset 值要重設，目前是 `1`）
-- [ ] `AttackEvent.percentage` 拆成 `progress` + `chargeRatio`，`AnimationHandler` 跟著改
+- [x] 抽出 `AttackBehaviour` 多型，新增 `RangeChargeAttackBehaviour`（= 原本寫死的邏輯）
+- [x] `Skill` 加 `type`，週期改成 `attackFrequency` + 三個權重（`1 : 0 : 1` 還原現狀）
+- [x] `AttackHandler` 改用多型分派，`CanOverdraw` 取自行為，內部無 `switch (type)`
+- [x] `OVERDRAW` 分出「強度」`chargeRatio` 與「完成度」`overdrawProgress`
+- [x] 改名：`Skill.overdrawPeriod` → `fullChargeTime`（asset 自動取到預設值 `1`，無需重設）
+- [x] `AttackEvent.percentage` 拆成 `progress` + `chargeRatio`，`AnimationHandler` 跟著改
+- [x] 移除 `Skill.Fire()`——生成屬於行為，不屬於資料
 
 **等 `IProjectileSpawner` 就位後（計畫 Phase 16）**
 
@@ -308,26 +309,28 @@ public readonly struct AttackContext
 
 ## 目前實作與設計的落差
 
-### 1. `canOverdraw` 開關還不存在
+上面描述的骨架**已經實作完成**（`7ae2fb0`）：多型分派、權重制、
+`OVERDRAW` 的兩個百分比、`Skill` 純資料 + `type`，都已就位。
+以下是尚未收斂的部分。
 
-目前行為固定等同 `canOverdraw = true`。
+### 1. `FIRE` 仍是瞬發
 
-### 2. `FIRE` 目前是單幀狀態
+`fireWeight` 預設 `0`，所以 `FIRE` 一幀就過。這與重構前等價，
+但要做「攻擊動作」區段或多段命中時得把權重調起來，並決定 `FIRE` 播什麼動畫
+（目前 `PlayerController.controller` 沒有 Fire state，`AnimationHandler` 播 `"Withdraw"`）。
 
-進入後立刻轉 `WITHDRAW`，無法表達「攻擊動作」這個區段，也無法做多段命中。
-權重制的 `fireWeight = 0` 正好等價於現狀，所以這一步可以延後。
+### 2. `IProjectileSpawner` 尚無實作
 
-### 3. `OVERDRAW` 只有一個百分比
+介面已宣告，`AttackContext.Spawner` 目前傳入 `null`，
+`RangeChargeAttackBehaviour.OnEnterFire` 會安靜跳過。
+狀態機正常運轉，只是不會有投射物飛出來。等物件池重整（計畫 Phase 15、16）。
 
-現有的 `time / skill.overdrawPeriod` 只被廣播出去，**沒有參與任何狀態切換**——
-唯一的切換條件是 `!attacking`。它其實就是上面說的「強度」，
-還缺一個由行為提供的「完成度」。
+### 3. 只有一種 `AttackType`
 
-### 4. `Skill` 還沒有 type 與行為掛勾
+`RangeCharge` 是目前唯一的型態。近戰揮擊、連發（`CanOverdraw => false`）
+等要等實際需要時再新增子類別。
 
-`FIRE` 要生成什麼目前寫死在 `AttackHandler`（而且 `skill.Fire()` 是空的）。
-
-### 5. 時序由數值驅動，不是由動畫驅動
+### 4. 時序由數值驅動，不是由動畫驅動
 
 `AnimationHandler` 收到百分比後做 `animator.Play(state, layer, percentage)`，
 用 normalizedTime 強制把動畫對齊到狀態機進度。
@@ -348,9 +351,9 @@ public readonly struct AttackContext
 
 只要照這條線走，看到名字就知道它會不會影響狀態轉換。
 
-### 這一輪要改的名字
+### 已改的名字（`7ae2fb0`）
 
-| 現在 | 改成 | 理由 |
+| 原本 | 改成 | 理由 |
 |---|---|---|
 | `Skill.overdrawPeriod` | `fullChargeTime` | 它是強度量表的斜率，不是狀態時長。專案裡 `period`（如 `dodgePeriod`）指狀態時長，語意會撞 |
 | 區域變數 `drawPercentage`<br>（`OVERDRAW` 分支內） | `chargeRatio` | 跟 `DRAW` 毫無關係；`ratio` 表示 0→1 正規化且允許超過 1 |
@@ -361,10 +364,10 @@ public readonly struct AttackContext
 > 未採用 `chargeMaxPeriod`：`Max` 與 `Period` 疊在一起容易被讀成
 > 「最多能 hold 多久」，那是 `overdrawProgress` 管的事，不是這個欄位。
 
-### 連帶要決定的：`AttackEvent.percentage`
+### `AttackEvent` 也拆開了
 
-目前這個欄位**在不同狀態代表不同東西**——`DRAW`/`FIRE`/`WITHDRAW` 是進度，
-`OVERDRAW` 是強度。這正是我們要消除的那種混淆。建議拆開：
+原本單一的 `percentage` 欄位**在不同狀態代表不同東西**——`DRAW`/`FIRE`/`WITHDRAW`
+是進度，`OVERDRAW` 是強度。已改成兩個欄位：
 
 ```csharp
 public class AttackEvent
