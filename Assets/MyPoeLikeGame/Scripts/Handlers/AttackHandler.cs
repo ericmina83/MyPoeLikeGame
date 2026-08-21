@@ -117,12 +117,10 @@ namespace MyPoeLikeGame.Handlers
 
             if (currState == AttackState.IDLE)
             {
-                // if (nextInputEvent != null)
-                // {
-                //     currInputEvent = nextInputEvent;
-                //     nextInputEvent = null;
-                //     currState = AttackState.DRAW;
-                // }
+                if (attacking)
+                {
+                    currState = AttackState.DRAW;
+                }
             }
             else if (currState == AttackState.DRAW)
             {
@@ -177,13 +175,11 @@ namespace MyPoeLikeGame.Handlers
             {
                 var withdrawPercentage = time * skill.attackFrequency * 2f;
 
-                // Reactive.events.OnNext(new AttackEvent
-                // {
-                //     gameObjectId = gameObjectId,
-                //     attackState = AttackState.WITHDRAW,
-                //     percentage = withdrawPercentage,
-                //     sender = this
-                // });
+                attackEvent.OnNext(new AttackEvent
+                {
+                    attackState = AttackState.WITHDRAW,
+                    percentage = withdrawPercentage,
+                });
 
                 if (withdrawPercentage >= 1.0f)
                 {

@@ -37,9 +37,9 @@ namespace MyPoeLikeGame.Controllers
             disposable.Dispose();
         }
 
-        private void Attack(bool _)
+        private void Attack(bool pressed)
         {
-            attackHandler.attackInput.OnNext(true);
+            attackHandler.attackInput.OnNext(pressed);
         }
     }
 }
