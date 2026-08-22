@@ -18,14 +18,17 @@ namespace MyPoeLikeGame.Handlers
         public Observable<Vector2> MovementInput => movementInput.AsObservable();
         public Observable<bool> AttackInput => attackInput.AsObservable();
 
-        // Start is called once before the first execution of Update after the MonoBehaviour is created
-        void Awake()
+        private void Awake()
         {
+            // 不能改成欄位初始化——生成的 PlayerInput 在建構子裡呼叫
+            // ScriptableObject.CreateInstance，Unity 明確禁止在 MonoBehaviour 的
+            // 建構子或欄位初始化中這麼做（UnityException:
+            // CreateScriptableObjectInstanceFromType is not allowed ...）。
             inputActions = new();
-        }
 
-        private void OnEnable()
-        {
+            // 回呼註冊描述的是「這個物件是什麼」，屬於建立階段；
+            // OnEnable / OnDisable 只管「現在活不活躍」。
+            // 停用期間註冊仍掛著，但 Disable() 之後 action 不會觸發，行為等價。
             inputActions.Player.Attack.performed += Attack;
             inputActions.Player.Attack.canceled += Attack;
 
@@ -35,21 +38,25 @@ namespace MyPoeLikeGame.Handlers
             inputActions.Player.Look.performed += Look;
 
             inputActions.Player.Dodge.performed += Dodge;
+        }
+
+        private void OnEnable()
+        {
             inputActions.Enable();
         }
 
         private void OnDisable()
         {
-            inputActions.Disable();
-            inputActions.Player.Attack.performed -= Attack;
-            inputActions.Player.Attack.canceled -= Attack;
+            // 防呆是為了讓 Awake 自己拋例外時，原始錯誤不會被這裡的 NRE 蓋掉。
+            inputActions?.Disable();
+        }
 
-            inputActions.Player.Move.performed -= Move;
-            inputActions.Player.Move.canceled -= Move;
-
-            inputActions.Player.Look.performed -= Look;
-
-            inputActions.Player.Dodge.performed -= Dodge;
+        private void OnDestroy()
+        {
+            // 生成的 PlayerInput 持有一個 InputActionAsset，不釋放會留下孤兒。
+            // 註冊的 delegate 隨它一起消失，不需要逐一 -=。
+            inputActions?.Dispose();
+            inputActions = null;
         }
 
         private void Attack(InputAction.CallbackContext ctx)
