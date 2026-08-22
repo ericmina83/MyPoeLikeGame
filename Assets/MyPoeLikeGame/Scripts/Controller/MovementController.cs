@@ -31,7 +31,8 @@ namespace MyPoeLikeGame.Controllers
 
         private void OnDisable()
         {
-            disposable.Dispose();
+            disposable?.Dispose();
+            disposable = null;
         }
 
         private void Move(Vector2 direction)

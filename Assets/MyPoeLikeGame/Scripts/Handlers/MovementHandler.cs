@@ -73,7 +73,8 @@ namespace MyPoeLikeGame.Handlers
 
         private void OnDisable()
         {
-            subscription.Dispose();
+            subscription?.Dispose();
+            subscription = null;
         }
 
         private void Update()

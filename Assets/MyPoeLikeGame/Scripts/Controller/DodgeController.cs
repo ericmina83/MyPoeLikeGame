@@ -32,7 +32,8 @@ namespace MyPoeLikeGame.Controllers
 
         private void OnDisable()
         {
-            disposable.Dispose();
+            disposable?.Dispose();
+            disposable = null;
         }
 
         private void Dodge(bool _)

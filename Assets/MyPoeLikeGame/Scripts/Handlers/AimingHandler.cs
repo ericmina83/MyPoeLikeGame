@@ -37,7 +37,8 @@ namespace MyPoeLikeGame.Handlers
 
         private void OnDisable()
         {
-            disposable.Dispose();
+            disposable?.Dispose();
+            disposable = null;
         }
 
         private void StateHandler(CharacterStateHandler.CharacterState state)

@@ -11,6 +11,51 @@ Cinemachine 3.1.7、Input System 1.19.0。
 
 ---
 
+# 環境設定（每台機器都要做一次）
+
+## Script Changes While Playing 必須設成 `Stop Playing And Recompile`
+
+`Preferences → General → Script Changes While Playing`
+
+**這是 EditorPrefs，屬於使用者偏好，不會進版控**，所以每個人／每台機器都得自己設。
+用程式設定的話：`EditorPrefs.SetInt("ScriptCompilationDuringPlay", 2)`。
+
+### 為什麼
+
+Unity 的預設是 `Recompile And Continue Playing`，也就是在 Play Mode 中改程式碼時
+當場做 domain reload 並讓遊戲繼續跑。實測過那個流程的真實順序：
+
+```text
+OnDisable（舊物件，欄位完好）→ domain reload → OnEnable（新物件，Awake 沒跑，欄位是 null）
+```
+
+**`Awake` 被跳過**——因為對 Unity 而言那些物件早就 awake 過了，只是 managed 表示被重建。
+沒有任何設定能讓它「每次重編譯都重跑 `Awake`」。
+
+後果是所有「在 `Awake` 快取、在 `OnEnable` 使用」的欄位都會變成 null。這曾造成
+每次編譯 6 個 `NullReferenceException`，而且是**跨兩次 reload 的連鎖**：
+第一次 reload 讓 `OnEnable` 炸掉 → `disposable` 沒被賦值 → 第二次 reload 換 `OnDisable` 炸。
+更糟的是遊戲看起來還在跑，但輸入與所有訂閱已經靜默失效，非常難查。
+
+改成 `Stop Playing And Recompile` 之後，那個情境根本不會發生，
+程式碼就能維持「`GetComponent` 與 `new` 放 `Awake`」的慣例寫法。
+
+**不要選 `Recompile After Finished Playing`**：它會把編譯延後到停止播放之後，
+造成「我明明改了程式碼，怎麼遊戲沒反應」的困惑。
+
+### 三種模式的實測差異
+
+| 情境 | `Awake` | `OnEnable` | `OnDisable` |
+|---|---|---|---|
+| 正常進入 Play Mode | ✅ 先（相差約 13ms） | ✅ 後 | — |
+| Play Mode 中重新編譯（預設模式） | ❌ **不跑** | ✅ 欄位為 null | ✅ 欄位完好 |
+| Edit Mode 中重新編譯 | ❌ | ❌ | ❌ |
+
+Edit Mode 重新編譯**完全不會**呼叫任何生命週期方法（除非標了
+`[ExecuteAlways]` / `[ExecuteInEditMode]`），所以那個情境從來不是問題來源。
+
+---
+
 # Unity 驗證協定（必讀）
 
 ## 為什麼有這一節

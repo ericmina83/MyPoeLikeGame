@@ -25,12 +25,12 @@ namespace MyPoeLikeGame.Handlers
         private DodgeHandler dodgeHandler;
 
 
+        // Start is called once before the first execution of Update after the MonoBehaviour is created
         private void Awake()
         {
             dodgeHandler = GetComponent<DodgeHandler>();
         }
 
-        // Start is called once before the first execution of Update after the MonoBehaviour is created
         private void OnEnable()
         {
             var builder = Disposable.CreateBuilder();
@@ -60,7 +60,8 @@ namespace MyPoeLikeGame.Handlers
 
         private void OnDisable()
         {
-            disposable.Dispose();
+            disposable?.Dispose();
+            disposable = null;
         }
 
         private void SetState(CharacterState nextState)

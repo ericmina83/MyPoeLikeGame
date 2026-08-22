@@ -20,7 +20,7 @@ namespace MyPoeLikeGame.Handlers
         private void Awake()
         {
             animator = GetComponent<Animator>();
-            gameObjectId = gameObject.GetEntityId ().ToString();
+            gameObjectId = gameObject.GetEntityId().ToString();
             upperLayerIdx = animator.GetLayerIndex("Upper");
             dodgeLayerIdx = animator.GetLayerIndex("Dodge");
         }
@@ -49,10 +49,8 @@ namespace MyPoeLikeGame.Handlers
 
         private void OnDisable()
         {
-            if (disposable == null)
-                return;
-
-            disposable.Dispose();
+            disposable?.Dispose();
+            disposable = null;
         }
 
         private void Update()

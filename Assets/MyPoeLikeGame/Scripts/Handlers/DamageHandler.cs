@@ -14,10 +14,6 @@ namespace MyPoeLikeGame.Handlers
             public int damageValue;
         }
 
-        private void Awake()
-        {
-        }
-
         private void OnEnable()
         {
             var builder = Disposable.CreateBuilder();
@@ -32,7 +28,8 @@ namespace MyPoeLikeGame.Handlers
 
         private void OnDisable()
         {
-            disposable.Dispose();
+            disposable?.Dispose();
+            disposable = null;
         }
 
         private void TakeDamage(Damage damage)
