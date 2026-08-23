@@ -53,17 +53,41 @@
 
 由 `AttackBehaviour`（type）提供，不是 `Skill` 上的獨立欄位。
 
-### 連發機制是這個開關的自然結果
+### 長按連發是這個開關的自然結果
+
+先區分兩種「連發」，它們差在**射速由誰決定**：
+
+| 型式 | 需要什麼 | 射速取決於 |
+|---|---|---|
+| **連點型** | 任何型態都行 | 玩家手速 + 循環時間 |
+| **長按型** | `canOverdraw = false` | **恰好 `1 / attackFrequency`**，資料寫死 |
+
+連點型不是機制，是「重複攻擊」的自然結果，任何攻擊都做得到。
+真正需要開關支援的是長按型。
 
 `canOverdraw = false` 時，按著 `attacking` 不放會形成循環：
 
-```
+```text
 DRAW → FIRE → WITHDRAW → IDLE →（attacking 仍為 true）→ DRAW → ...
 ```
 
-因為永遠進不了 `OVERDRAW`，所以不會停下來等玩家放手。
-而這個循環的週期**正好就是 `1 / attackFrequency`**——連發速率與攻速數值天然一致，
+因為永遠進不了 `OVERDRAW`，所以不會停下來等玩家放手，
+而這個循環的週期**正好就是 `1 / attackFrequency`**——射速與攻速數值天然一致，
 不需要額外的冷卻機制。
+
+### 兩個旋鈕組合出三種長按行為
+
+`canOverdraw` 與 `OverdrawProgress` 是**真正正交**的，不是只有開關兩種局面：
+
+| `canOverdraw` | `OverdrawProgress` | 按著不放會怎樣 | 循環週期 |
+|---|---|---|---|
+| `false` | — | 一直繞 `DRAW → FIRE → WITHDRAW → IDLE` | `1 / attackFrequency` |
+| `true` | 恆為 `0`（預設） | 停在 `OVERDRAW` 蓄力，**不會重複** | 無 |
+| `true` | 會達到 `1` | 蓄滿自動發射，然後繼續下一輪 | `1 / attackFrequency` + 蓄滿時間 |
+
+> **中間那列是個容易誤踩的陷阱**：`canOverdraw = true` 而型態又沒有提供
+> 「放手以外」的離開條件時，玩家按著就永遠卡在 `OVERDRAW`，循環回不到 `IDLE`。
+> 這是刻意的（弓就該這樣），但設計新型態時要意識到自己選的是哪一種。
 
 ---
 
