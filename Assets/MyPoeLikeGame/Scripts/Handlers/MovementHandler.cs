@@ -20,7 +20,7 @@ namespace MyPoeLikeGame.Handlers
 
         private IDisposable subscription;
 
-        private bool canMove = true;
+        private bool isBusy = false;
 
         private CharacterStateHandler stateHandler;
 
@@ -52,23 +52,12 @@ namespace MyPoeLikeGame.Handlers
 
             MovementEvent.Subscribe((evn) => speed = evn.speed).AddTo(ref builder);
 
-            stateHandler.stateObservable.Subscribe(StateHandler).AddTo(ref builder);
+            // 訂閱匯總值，不訂閱個別 flag：加新狀況（受擊硬直、死亡）時，
+            // 改的是 CharacterStateHandler 的推導式，這裡一行都不用動。
+            // 「busy 代表不能移動」是這個 Handler 自己的詮釋，中轉站沒有規定。
+            stateHandler.IsBusy.Subscribe(v => isBusy = v).AddTo(ref builder);
 
             subscription = builder.Build();
-
-            canMove = true;
-        }
-
-        private void StateHandler(CharacterStateHandler.CharacterState state)
-        {
-            if (state == CharacterStateHandler.CharacterState.DODGE)
-            {
-                canMove = false;
-            }
-            else
-            {
-                canMove = true;
-            }
         }
 
         private void OnDisable()
@@ -79,7 +68,7 @@ namespace MyPoeLikeGame.Handlers
 
         private void Update()
         {
-            if (!canMove)
+            if (isBusy)
                 return;
 
             characterController.SimpleMove(speed);

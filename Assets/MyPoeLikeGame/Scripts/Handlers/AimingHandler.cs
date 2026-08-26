@@ -15,7 +15,7 @@ namespace MyPoeLikeGame.Handlers
 
         public readonly BehaviorSubject<Vector2> lookInput = new(Vector2.zero);
 
-        private bool canAim = true;
+        private bool isBusy = false;
 
         private CharacterStateHandler stateHandler;
 
@@ -28,11 +28,12 @@ namespace MyPoeLikeGame.Handlers
         {
             var builder = Disposable.CreateBuilder();
 
-            stateHandler.stateObservable.Subscribe(StateHandler).AddTo(ref builder);
+            // 注意：瞄準之後很可能會和移動／攻擊分家——拉弓時不能移動但**必須能瞄準**。
+            // 因為中轉站只陳述狀況、不下許可，那天到來時改的是這裡的詮釋
+            // （例如 isDodging 擋瞄準、isAttacking 不擋），中轉站不必動。
+            stateHandler.IsBusy.Subscribe(v => isBusy = v).AddTo(ref builder);
 
             disposable = builder.Build();
-
-            canAim = true;
         }
 
         private void OnDisable()
@@ -41,21 +42,9 @@ namespace MyPoeLikeGame.Handlers
             disposable = null;
         }
 
-        private void StateHandler(CharacterStateHandler.CharacterState state)
-        {
-            if (state == CharacterStateHandler.CharacterState.DODGE)
-            {
-                canAim = false;
-            }
-            else
-            {
-                canAim = true;
-            }
-        }
-
         private void Update()
         {
-            if (!canAim)
+            if (isBusy)
                 return;
 
             var lookAt = new Vector3(lookInput.Value.x, transform.position.y, lookInput.Value.y);

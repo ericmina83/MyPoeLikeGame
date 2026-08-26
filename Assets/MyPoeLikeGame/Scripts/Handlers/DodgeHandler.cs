@@ -34,6 +34,12 @@ namespace MyPoeLikeGame.Handlers
         private CharacterController characterController;
         private MovementHandler movementHandler;
 
+        /// <summary>
+        /// 只用來「回報」，不訂閱它。相依是單向的：DodgeHandler → CharacterStateHandler。
+        /// 中轉站不認識這個類別，所以不會有參照環。
+        /// </summary>
+        private CharacterStateHandler stateHandler;
+
         public readonly Subject<DodgeEvent> dodgeEvent = new();
         public readonly Subject<bool> dodgeInput = new();
 
@@ -41,6 +47,7 @@ namespace MyPoeLikeGame.Handlers
         {
             characterController = GetComponent<CharacterController>();
             movementHandler = GetComponent<MovementHandler>();
+            stateHandler = GetComponent<CharacterStateHandler>();
         }
 
         private void OnEnable()
@@ -55,17 +62,15 @@ namespace MyPoeLikeGame.Handlers
                     if (dodgeDirection != null)
                         return;
 
-                    if (!Mathf.Approximately(direction.magnitude, 0.0f))
-                    {
-                        dodgeDirection = new Vector3(direction.x, 0.0f, direction.y);
-                    }
-                    else
-                    {
-                        dodgeDirection = -transform.forward;
-                    }
+                    // 起手條件屬於這個 Handler 自己，不是跟中轉站要許可。
+                    // 之後若要加「暈眩時不能翻滾」，形狀是在這裡讀狀況、自己組條件：
+                    //     if (stateHandler.IsIncapacitated.CurrentValue) return;
+                    // 「我已經在翻滾」用上面的 dodgeDirection 判斷就好——用自己的欄位，
+                    // 就天然排除了自己回報進中轉站的那份貢獻，不會自我否定。
 
-                    time = 0.0f; // Reset time for the new dodge
-                    dodgeDirection?.Normalize();
+                    BeginDodge(!Mathf.Approximately(direction.magnitude, 0.0f)
+                        ? new Vector3(direction.x, 0.0f, direction.y)
+                        : -transform.forward);
                 }).AddTo(ref builder);
 
 
@@ -76,6 +81,23 @@ namespace MyPoeLikeGame.Handlers
         {
             disposable?.Dispose();
             disposable = null;
+        }
+
+        // ── 狀態轉換集中在這兩個方法 ────────────────────────────────────
+        // 把「改自己的狀態」和「回報給中轉站」綁在同一處，是這份副本不會漂移的原因：
+        // 只有一個寫入者，而且寫入與轉換同地。散在各處呼叫 ReportDodging 才會出事。
+
+        private void BeginDodge(Vector3 direction)
+        {
+            dodgeDirection = direction.normalized;
+            time = 0.0f;
+            stateHandler.ReportDodging(true);
+        }
+
+        private void EndDodge()
+        {
+            dodgeDirection = null;
+            stateHandler.ReportDodging(false);
         }
 
         private void Update()
@@ -100,7 +122,7 @@ namespace MyPoeLikeGame.Handlers
                     dodgeDirection = dodgeDirection.Value,
                 });
 
-                dodgeDirection = null;
+                EndDodge();
             }
             else // dodging
             {

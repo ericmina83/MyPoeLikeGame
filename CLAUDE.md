@@ -10,6 +10,56 @@ Unity 6000.5.4f1 的 ARPG 專案。程式碼在 `Assets/MyPoeLikeGame/Scripts/`�
 Cinemachine 3.1.7、Input System 1.19.0。
 
 ---
+---
+
+# 架構通則（寫程式前必讀）
+
+這幾條是討論很久才收斂出來的，**不要在單一 phase 裡憑直覺推翻**。
+完整理由與反例見 [`Scripts/Handlers/readme.md`](Assets/MyPoeLikeGame/Scripts/Handlers/readme.md)。
+
+## ① 共用狀態暴露「狀態」，不暴露「許可」
+
+`CharacterStateHandler` 這類共用板只**陳述事實**，由消費端自己詮釋。
+
+```csharp
+public ReadOnlyReactiveProperty<bool> IsBusy { get; }   // ✅ 事實
+public ReadOnlyReactiveProperty<bool> CanAct { get; }   // ❌ 許可
+```
+
+許可式命名會誘導人把**瞬間性**的問題（「我現在可以開始嗎」）
+當成**持續性**的（「我是不是該停下」），接出「開始翻滾 → 變 busy →
+收到通知 → 取消翻滾」這種自我否定的線。
+
+**推論：起手條件屬於各 Handler 自己**，用自己的欄位判斷「我已經在做了」，
+天然排除自己的貢獻，不需要共用板提供排除呼叫者的特製答案。
+
+## ② 所有邊指向共用板
+
+共用板**不引用、不訂閱任何 Handler**，是 Handler 主動呼叫 `Report*` 回報。
+對外參照數維持 0，加多少狀況來源都不會有參照環。
+
+方向看的是**誰持有誰**：`stateHandler.IsBusy.Subscribe(...)` 是
+「訂閱者依賴共用板」，和 `Report*` 同向，不算反向邊。
+
+## ③ 監聽匯總值，不要監聽個別 flag
+
+訂閱 `isDodging` 的話，加 `isStunned` 時會靜默漏掉。
+訂閱匯總值的話，新狀況只要加進匯總值的推導式，所有消費端自動生效。
+
+## ④ 狀況用 flag 板，不要用 enum
+
+角色狀況彼此**正交**（可以同時中毒＋翻滾＋攻擊），enum 假設互斥所以不適用。
+代價是「不可能的組合」變得可表達，補償方式是紀律：
+**每個 flag 恰好一個寫入者，而且寫入與狀態轉換同地發生**
+（見 `DodgeHandler.BeginDodge` / `EndDodge`）。
+
+## ⑤ Reactive 的適用範圍
+
+- **一對多的狀態擴散** → Observable 訂閱
+- **一對一、有明確對象的互動**（子彈打中角色）→ 直接呼叫介面
+- **不重建全域事件匯流排**。舊的 `Reactive.cs`（單一 `Subject<IEvent>` +
+  `gameObjectId` 字串路由）已刪除，不要以任何形式復活。
+
 
 # 環境設定（每台機器都要做一次）
 

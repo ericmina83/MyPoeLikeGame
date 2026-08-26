@@ -56,7 +56,7 @@ namespace MyPoeLikeGame.Handlers
 
         private bool attacking = false;
 
-        private bool canAttack = false;
+        private bool isBusy = false;
 
         [NonSerialized]
         public BehaviorSubject<AttackEvent> attackEvent = new(new AttackEvent
@@ -77,7 +77,11 @@ namespace MyPoeLikeGame.Handlers
         {
             var builder = Disposable.CreateBuilder();
 
-            characterStateHandler.stateObservable.Subscribe(StateHandler).AddTo(ref builder);
+            // 這裡把 busy 詮釋為**中斷**（見 Update 的收尾邏輯），不是起手許可。
+            // 起手條件（「我現在可以開始攻擊嗎」）屬於這個 Handler 自己：等 isAttacking
+            // 也回報進中轉站之後，用 currState 判斷「我已經在攻擊」即可，
+            // 不需要中轉站提供一份排除自己的特製答案。
+            characterStateHandler.IsBusy.Subscribe(v => isBusy = v).AddTo(ref builder);
 
             attackInput.Subscribe((input) =>
             {
@@ -91,18 +95,6 @@ namespace MyPoeLikeGame.Handlers
         {
             disposable?.Dispose();
             disposable = null;
-        }
-
-        private void StateHandler(CharacterStateHandler.CharacterState state)
-        {
-            if (state == CharacterStateHandler.CharacterState.DODGE)
-            {
-                canAttack = false;
-            }
-            else
-            {
-                canAttack = true;
-            }
         }
 
         /// <summary>
@@ -166,7 +158,9 @@ namespace MyPoeLikeGame.Handlers
             if (behaviour == null)
                 return;
 
-            if (!canAttack)
+            // busy 對攻擊的詮釋：不是「停在原地」，而是「趕快收尾」——
+            // 已經拉滿的弓要射出去（OVERDRAW → FIRE），還沒成形的動作直接放棄。
+            if (isBusy)
             {
                 if (currState == AttackState.OVERDRAW)
                 {
