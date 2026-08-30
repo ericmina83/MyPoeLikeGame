@@ -13,11 +13,14 @@ namespace MyPoeLikeGame.Handlers
 
         private IDisposable disposable;
 
-        public readonly BehaviorSubject<Vector2> lookInput = new(Vector2.zero);
+        private readonly BehaviorSubject<Vector2> lookInput = new(Vector2.zero);
 
         private bool isBusy = false;
 
         private CharacterStateHandler stateHandler;
+
+        /// <summary>輸入埠：Controller 把準心指向的世界座標推進來。</summary>
+        public void SetLookTarget(Vector2 target) => lookInput.OnNext(target);
 
         private void Awake()
         {

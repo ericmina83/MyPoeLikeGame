@@ -50,7 +50,7 @@ namespace MyPoeLikeGame.Controllers
                 point = hit.point;
             }
 
-            aimingHandler.lookInput.OnNext(new Vector2(point.x, point.z));
+            aimingHandler.SetLookTarget(new Vector2(point.x, point.z));
         }
     }
 }

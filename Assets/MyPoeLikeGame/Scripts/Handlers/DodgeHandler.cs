@@ -40,8 +40,17 @@ namespace MyPoeLikeGame.Handlers
         /// </summary>
         private CharacterStateHandler stateHandler;
 
-        public readonly Subject<DodgeEvent> dodgeEvent = new();
-        public readonly Subject<bool> dodgeInput = new();
+        private readonly Subject<DodgeEvent> dodgeEvent = new();
+        private readonly Subject<bool> dodgeInput = new();
+
+        /// <summary>
+        /// 輸出埠：翻滾的進度廣播。命名故意不叫 <c>DodgeEvent</c>——
+        /// 那個名字被上面的 payload 類別佔走了，屬性和巢狀型別同名會撞名（CS0102）。
+        /// </summary>
+        public Observable<DodgeEvent> DodgeEvents => dodgeEvent.AsObservable();
+
+        /// <summary>輸入埠：Controller 請求翻滾一次。方向取自當下的移動意圖。</summary>
+        public void RequestDodge() => dodgeInput.OnNext(true);
 
         private void Awake()
         {
@@ -54,9 +63,11 @@ namespace MyPoeLikeGame.Handlers
         {
             var builder = Disposable.CreateBuilder();
 
-            // Subscribe to the movement input only when dodgeInput emits
+            // Subscribe to the movement input only when dodgeInput emits.
+            // 讀 MovementEvent 取 input，不是跟 MovementHandler 要一份原始輸入的公開通道——
+            // 那樣就要多開一個對外欄位，而這裡要的資訊 MovementEvent 已經有了。
             dodgeInput
-                .WithLatestFrom(movementHandler.movementInput, (input, direction) => direction)
+                .WithLatestFrom(movementHandler.MovementEvent, (_, movement) => movement.input)
                 .Subscribe(direction =>
                 {
                     if (dodgeDirection != null)

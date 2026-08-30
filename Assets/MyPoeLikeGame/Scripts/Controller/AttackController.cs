@@ -40,7 +40,7 @@ namespace MyPoeLikeGame.Controllers
 
         private void Attack(bool pressed)
         {
-            attackHandler.attackInput.OnNext(pressed);
+            attackHandler.SetAttackInput(pressed);
         }
     }
 }

@@ -62,7 +62,7 @@ namespace MyPoeLikeGame.Sandbox
                     "造型不會有反應。把造型 prefab 放進 Model 子物件並填好三個部位。", this);
             }
 
-            subscription = attack.attackEvent.Subscribe(e =>
+            subscription = attack.AttackEvents.Subscribe(e =>
             {
                 state = e.attackState;
                 progress = e.progress;

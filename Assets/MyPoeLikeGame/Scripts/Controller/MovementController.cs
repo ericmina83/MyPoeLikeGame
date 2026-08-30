@@ -37,7 +37,7 @@ namespace MyPoeLikeGame.Controllers
 
         private void Move(Vector2 direction)
         {
-            movementHandler.movementInput.OnNext(direction);
+            movementHandler.SetMoveInput(direction);
         }
     }
 }

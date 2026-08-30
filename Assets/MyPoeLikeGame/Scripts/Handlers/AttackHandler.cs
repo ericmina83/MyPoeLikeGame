@@ -52,19 +52,28 @@ namespace MyPoeLikeGame.Handlers
 
         private IDisposable disposable;
 
-        public readonly BehaviorSubject<bool> attackInput = new(false);
+        private readonly BehaviorSubject<bool> attackInput = new(false);
 
         private bool attacking = false;
 
         private bool isBusy = false;
 
         [NonSerialized]
-        public BehaviorSubject<AttackEvent> attackEvent = new(new AttackEvent
+        private readonly BehaviorSubject<AttackEvent> attackEvent = new(new AttackEvent
         {
             attackState = AttackState.IDLE,
             progress = 0,
             chargeRatio = 0
         });
+
+        /// <summary>
+        /// 輸出埠：攻擊狀態機的進度廣播。命名故意不叫 <c>AttackEvent</c>——
+        /// 那個名字被上面的 payload 類別佔走了，屬性和巢狀型別同名會撞名（CS0102）。
+        /// </summary>
+        public Observable<AttackEvent> AttackEvents => attackEvent.AsObservable();
+
+        /// <summary>輸入埠：Controller 把攻擊鍵按下／放開推進來。</summary>
+        public void SetAttackInput(bool pressed) => attackInput.OnNext(pressed);
 
         private CharacterStateHandler characterStateHandler;
 

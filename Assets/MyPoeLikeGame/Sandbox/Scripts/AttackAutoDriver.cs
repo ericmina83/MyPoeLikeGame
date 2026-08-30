@@ -42,7 +42,7 @@ namespace MyPoeLikeGame.Sandbox
         {
             // 停用時確保不會把「按著」的狀態留在狀態機裡
             if (attack != null)
-                attack.attackInput.OnNext(false);
+                attack.SetAttackInput(false);
         }
 
         private void Update()
@@ -56,7 +56,7 @@ namespace MyPoeLikeGame.Sandbox
 
             // 偶數步按下、奇數步放開；alternateWithTap 時長短交替
             var pressing = step % 2 == 0;
-            attack.attackInput.OnNext(pressing);
+            attack.SetAttackInput(pressing);
 
             if (pressing)
             {

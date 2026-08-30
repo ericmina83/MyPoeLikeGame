@@ -38,7 +38,7 @@ namespace MyPoeLikeGame.Controllers
 
         private void Dodge(bool _)
         {
-            dodgeHandler.dodgeInput.OnNext(true);
+            dodgeHandler.RequestDodge();
         }
     }
 }

@@ -30,15 +30,28 @@ namespace MyPoeLikeGame.Handlers
         [SerializeField]
         private float movementSpeedIncrement = 0.0f;
 
-        public readonly Subject<Vector2> movementInput = new();
-        public Observable<MovementData> MovementEvent => movementInput.Select((input) =>
+        private readonly Subject<Vector2> movementInput = new();
+
+        /// <summary>輸出埠：移動意圖與換算後的速度。誰想知道角色在動就訂閱這個。</summary>
+        public Observable<MovementData> MovementEvent { get; }
+
+        public MovementHandler()
         {
-            return new MovementData
+            // 建好一次存住，不要讓 MovementEvent 變成每次讀取都重建一條 Select 鏈
+            // （原本是 expression-bodied property，DodgeHandler 和自己的 OnEnable
+            // 各讀一次，就變成兩條互不相干的鏈，白白多算兩次）。
+            // 放構子安全：movementSpeedBasic/Increment 是 [SerializeField]，
+            // 這個 lambda 是閉包讀 this 的欄位，實際讀值在 movementInput 觸發當下，
+            // 那時 Unity 早就把 Inspector 的值反序列化進來了。
+            MovementEvent = movementInput.Select(input => new MovementData
             {
                 input = input,
                 speed = movementSpeedBasic * (1.0f + movementSpeedIncrement) * new Vector3(input.x, 0, input.y),
-            };
-        });
+            });
+        }
+
+        /// <summary>輸入埠：Controller 把移動意圖推進來。</summary>
+        public void SetMoveInput(Vector2 direction) => movementInput.OnNext(direction);
 
         private void Awake()
         {
