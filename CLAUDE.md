@@ -61,6 +61,28 @@ public ReadOnlyReactiveProperty<bool> CanAct { get; }   // ❌ 許可
   `gameObjectId` 字串路由）已刪除，不要以任何形式復活。
 
 
+# 紀錄規則（必讀）
+
+專案的進度與決定**只能存在 repo 裡**。Claude 的本機計畫檔、memory、對話紀錄、
+superpowers 的 SDD ledger（`.superpowers/`，gitignore 且做完會刪）都不算——換電腦就沒了，
+原本的 19-phase 主計畫就是這樣弄丟過一次。
+
+| 要記的 | 寫在哪 |
+|---|---|
+| 要做什麼、做到哪、下一步 | [`docs/ROADMAP.md`](docs/ROADMAP.md)——唯一的 TODO 來源 |
+| 為什麼這樣決定 | [`docs/decisions.md`](docs/decisions.md)——一條一行，新的寫最下面 |
+| 某個功能的設計與步驟 | `docs/superpowers/specs/`、`docs/superpowers/plans/` |
+| 某個子系統的長篇設計理由 | 該資料夾的 `readme.md`（例如 `Scripts/Handlers/readme.md`） |
+
+規則：
+
+- **對話中做出會影響設計或範圍的決定，當輪就寫進 `decisions.md`**，不要等使用者提醒。
+- **完成、新增、調整順序任何一件待辦，當輪就更新 `ROADMAP.md`** 的狀態表與「目前狀態」。
+- **SDD 執行中產生的 `Ruling:`，在刪除 workspace 之前抄進 `decisions.md`**。
+- 這兩個檔案的更新跟著該次變動一起 commit，一樣遵守「停在未 add、使用者看過才 commit」。
+
+---
+
 # 環境設定（每台機器都要做一次）
 
 ## Script Changes While Playing 必須設成 `Stop Playing And Recompile`
