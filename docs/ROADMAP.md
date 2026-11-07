@@ -8,7 +8,7 @@
 > 不在 repo 裡）。那個檔案後來從硬碟上消失，2026-10-19 從對話紀錄重建回來並移進 repo。
 > 文中的 `檔案.cs:行號` 連結是當時的位置，asmdef 切分搬過檔案之後會對不上，以檔名搜尋為準。
 
-## 目前狀態（2026-10-19）
+## 目前狀態（2026-11-07）
 
 **下一步：asmdef 切分（Phase 7.5）**——spec 與 plan 都已經寫好並 commit，還沒開始執行。
 
@@ -17,13 +17,14 @@
 
 ### 待決問題
 
-- [ ] **subagent 執行時誰 commit**：superpowers 的 subagent-driven-development 需要每個 task
-  先 commit 才能做自動 review（`review-package` 只能 diff 已 commit 的範圍）。提議的做法是
-  「subagent 本機 commit，但每個 task review 通過後停下來等使用者看過才進下一個」。**尚未得到確認。**
-- [ ] **`Packages/packages-lock.json` 的未 commit 變動**：`com.coplaydev.unity-mcp` 的 git hash
-  從 `4ce7dd3…` 變成 `aa5fc63…`，對應 MCP server 從 3.4.7 升到 3.4.9。不是重構造成的，
-  要單獨 commit 還是放著，待使用者決定。
-- [ ] **21 個 commit 尚未 push**：換電腦開發前必須先 push `damage_mechanic`。
+- [ ] **subagent 執行時誰 commit**：已決定「每個 task 做完都停下來給使用者看」（見 `decisions.md`），
+  但 superpowers 的 subagent-driven-development 需要每個 task 先 commit 才能做自動 review
+  （`review-package` 只能 diff 已 commit 的範圍）。提議的做法是「subagent 在本機 commit，
+  使用者看過才進下一個 task」。**這一點尚未得到確認。**
+- [x] ~~**`Packages/packages-lock.json` 的未 commit 變動**~~：`com.coplaydev.unity-mcp` 的 git hash
+  從 `4ce7dd3…` 變成 `aa5fc63…`（MCP server 3.4.7 → 3.4.9），2026-11-07 單獨 commit 為 `64516db`。
+- [x] ~~**21 個 commit 尚未 push**~~：2026-11-07 已 push 到 `7310942`。HTTPS 憑證已失效，
+  這次是用 SSH 網址推送，之後 `origin` 已改為 SSH（`git@github.com:ericmina83/MyPoeLikeGame.git`）。
 
 ### 不屬於任何 phase 的待辦
 

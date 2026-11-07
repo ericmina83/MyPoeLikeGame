@@ -88,6 +88,9 @@
 - **`.codegraph/` 只進版控它自己的 `.gitignore`**——索引是每台機器各自重建的快取。（`26d3aa2`）
 - **執行 asmdef plan 時不用 git worktree**——Unity Editor 與 MCP 綁在這個資料夾，worktree 是另一個位置，
   驗證協定會做不了。
+- **用 subagent-driven-development 執行時，每個 task 做完都停下來給使用者看，不連續跑完**——
+  superpowers 預設是 task 之間不停，但這和專案一直以來「看過才往下」的規則衝突，使用者選擇保留後者。
+  （補記：這條在 2026-10-19 建立紀錄規則時漏掉了，2026-11-07 補上。）
 
 ## 2026-10-19：紀錄方式
 
