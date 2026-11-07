@@ -99,3 +99,17 @@
 - **建立這份 `decisions.md`，並在 `CLAUDE.md` 加紀錄規則**——superpowers 只記錄 spec 與 plan，
   不記錄跨功能的路線圖、聊天中做的決定、執行時的 ruling（SDD 的 ledger 是 gitignore 的，做完會刪）。
 - **不用 Claude 的 memory 功能保存專案進度**——它存在 `~/.claude/`，換電腦就沒了。
+
+## 2026-11-07：執行方式與 repo 設定
+
+- **asmdef plan 不用 subagent 執行，由主對話在主資料夾逐 task 直接做**（`superpowers:executing-plans`）——
+  使用者決定。取代上面 08-30「用 subagent-driven-development 執行時每個 task 停下來」那條；
+  「每個 task 做完停在未 add、使用者看過才往下」照舊。
+- **`packages-lock.json` 的 unity-mcp 升版單獨 commit**——讓每台機器解析到同一版 MCP。（`64516db`）
+- **`origin` 改用 SSH**——HTTPS 的 token 已失效，SSH 金鑰已重新產生並驗證過。
+- **`Core` 這個名字先不改**——它指的是「零相依的最底層」，不是領域核心（領域核心其實是 Handlers）。
+  使用者提出這個疑問後決定暫不改名。
+- **Ruling：`PlayerInputHandler` 與 `PlayerInput.cs` 跟著 Controller 層走，不放進 `Handlers.asmdef`**——
+  plan 的漏洞：它依賴自動產生的 `PlayerInput` 類別，Task 2 時那個類別還在 `Assembly-CSharp`（asmdef 引用不到），
+  Task 4 又搬進 `Game`（Handlers 不准引用）。它實際上是輸入來源、位在 Controller 上游，不是「機制本體」。
+  這次只搬位置；namespace 與改名（例如 `PlayerInputSource`）留給 Phase 19。

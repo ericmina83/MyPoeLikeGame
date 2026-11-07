@@ -10,17 +10,18 @@
 
 ## 目前狀態（2026-11-07）
 
-**下一步：asmdef 切分（Phase 7.5）**——spec 與 plan 都已經寫好並 commit，還沒開始執行。
+**進行中：asmdef 切分（Phase 7.5）**——Task 1（`Core`）已完成。
+下一步：先修正 spec／plan——`PlayerInputHandler` 與 `PlayerInput.cs` 要移到 Controller 層
+（它依賴 `PlayerInput` 類別，留在 `Handlers.asmdef` 會編不過；見 `decisions.md`），再做 Task 2（`Handlers`）。
+執行方式：不用 subagent，主對話在主資料夾逐 task 做，每個 task 停在未 add 等使用者 review。
 
 - Spec：[`superpowers/specs/2026-08-30-asmdef-split-design.md`](superpowers/specs/2026-08-30-asmdef-split-design.md)
 - Plan：[`superpowers/plans/2026-08-30-asmdef-split.md`](superpowers/plans/2026-08-30-asmdef-split.md)（7 個 task）
 
 ### 待決問題
 
-- [ ] **subagent 執行時誰 commit**：已決定「每個 task 做完都停下來給使用者看」（見 `decisions.md`），
-  但 superpowers 的 subagent-driven-development 需要每個 task 先 commit 才能做自動 review
-  （`review-package` 只能 diff 已 commit 的範圍）。提議的做法是「subagent 在本機 commit，
-  使用者看過才進下一個 task」。**這一點尚未得到確認。**
+- [x] ~~**subagent 執行時誰 commit**~~：2026-11-07 決定**不用 subagent**，由主對話在主資料夾
+  逐 task 執行，每個 task 停在未 add 等使用者看過（見 `decisions.md`），這個問題不再存在。
 - [x] ~~**`Packages/packages-lock.json` 的未 commit 變動**~~：`com.coplaydev.unity-mcp` 的 git hash
   從 `4ce7dd3…` 變成 `aa5fc63…`（MCP server 3.4.7 → 3.4.9），2026-11-07 單獨 commit 為 `64516db`。
 - [x] ~~**21 個 commit 尚未 push**~~：2026-11-07 已 push 到 `7310942`。HTTPS 憑證已失效，
