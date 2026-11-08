@@ -11,8 +11,8 @@
 ## 目前狀態（2026-11-07）
 
 **進行中：asmdef 切分（Phase 7.5）**——Task 1（`Core`）已完成。
-下一步：先修正 spec／plan——`PlayerInputHandler` 與 `PlayerInput.cs` 要移到 Controller 層
-（它依賴 `PlayerInput` 類別，留在 `Handlers.asmdef` 會編不過；見 `decisions.md`），再做 Task 2（`Handlers`）。
+spec／plan 已修正（`PlayerInputHandler` 與 `PlayerInput.cs` 移到 Controller 層，見 `decisions.md`），
+下一步：Task 2（搬出輸入來源 + `Handlers.asmdef`）。
 執行方式：不用 subagent，主對話在主資料夾逐 task 做，每個 task 停在未 add 等使用者 review。
 
 - Spec：[`superpowers/specs/2026-08-30-asmdef-split-design.md`](superpowers/specs/2026-08-30-asmdef-split-design.md)

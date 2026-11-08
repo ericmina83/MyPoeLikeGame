@@ -45,15 +45,16 @@ Scripts/Core/           Core.asmdef          零相依
   └─ ScriptableObjects/  (Skill.cs)
 
 Scripts/Handlers/       Handlers.asmdef      References: Core
-  └─ (現有九個檔案，原地不動)
+  └─ (現有九個檔案中的八個，原地不動；PlayerInputHandler 移到 Controllers，見下方「修正」)
 
-Scripts/Controllers/    Controllers.asmdef   References: Handlers
-  └─ (現有 Controller/ 四個檔案搬過來；資料夾同時改名 Controller→Controllers，
-      使其與現有 namespace `MyPoeLikeGame.Controllers` 一致——這是原計畫 Phase 19
-      已經排定的動作，這次提前做，因為都在動 asmdef 邊界了)
+Scripts/Controllers/    Controllers.asmdef   References: Handlers, Unity.InputSystem
+  ├─ (現有 Controller/ 四個檔案搬過來；資料夾同時改名 Controller→Controllers，
+  │   使其與現有 namespace `MyPoeLikeGame.Controllers` 一致——這是原計畫 Phase 19
+  │   已經排定的動作，這次提前做，因為都在動 asmdef 邊界了)
+  └─ PlayerInputHandler.cs、PlayerInput.cs（輸入來源，見下方「修正」）
 
 Scripts/Game/           Game.asmdef          References: Core, Handlers, Controllers
-  └─ Enemy.cs, EnemyGenerator.cs, PlayerInput.cs
+  └─ Enemy.cs, EnemyGenerator.cs
       （目前散在 Scripts/ 根目錄與 Scripts/Enemy/，這次收進 Scripts/Game/）
 
 Sandbox/                Sandbox.asmdef       References: Core, Handlers
@@ -64,6 +65,22 @@ Tests/Core.Tests/       Core.Tests.asmdef    References: Core（EditMode）
 ```
 
 **判準**：`Core` 收「不依賴任何 Handler、不依賴跨物件的 MonoBehaviour 生命週期規則」的東西——`Damage`/`Projectile`/`Pool` 雖然是 `MonoBehaviour`，但邏輯自成一體，沒有跨 Handler 耦合。
+
+> `Core` 指的是「零相依的最底層」，不是領域核心——遊戲機制的本體其實是 `Handlers`。名字暫時不改（2026-11-07 決定）。
+
+### 修正（2026-11-08）：`PlayerInputHandler` 與 `PlayerInput.cs` 歸 Controller 層
+
+原設計把 `PlayerInputHandler` 留在 `Handlers.asmdef`、把 `PlayerInput.cs` 放進 `Game.asmdef`，
+**這個組合編不過**：`PlayerInputHandler` 依賴自動產生的 `PlayerInput` 類別，而 `Handlers` 不准引用 `Game`
+（在 `PlayerInput.cs` 搬家前，它又位於 asmdef 引用不到的 `Assembly-CSharp`）。
+
+它其實不是「機制本體」，而是位在 Controller 上游的**輸入來源**（`CLAUDE.md` 的分層圖本來就畫成
+`PlayerInputHandler → Controller/ → Handlers/`），只有四個 Controller 用它，Handler 一個都沒用。
+所以兩個檔案一起放進 `Controllers.asmdef`，`Unity.InputSystem` 的引用也跟著從 `Handlers` 移到 `Controllers`
+——順帶讓「Handler 不認識輸入裝置」也變成編譯器強制的規則。
+
+- namespace 不變（`PlayerInputHandler` 仍是 `MyPoeLikeGame.Handlers`）；改 namespace 或改名（例如 `PlayerInputSource`）留給 Phase 19。
+- 搬 `PlayerInput.cs` 時要一併改 `PlayerInput.inputactions` 的 `wrapperCodePath`，否則下次重新產生程式碼會在舊位置多出一份，造成重複類別（CS0101）。
 
 ## 測試計畫
 

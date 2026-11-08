@@ -113,3 +113,6 @@
   plan 的漏洞：它依賴自動產生的 `PlayerInput` 類別，Task 2 時那個類別還在 `Assembly-CSharp`（asmdef 引用不到），
   Task 4 又搬進 `Game`（Handlers 不准引用）。它實際上是輸入來源、位在 Controller 上游，不是「機制本體」。
   這次只搬位置；namespace 與改名（例如 `PlayerInputSource`）留給 Phase 19。
+  （spec「修正（2026-11-08）」、plan Task 2–4 已改寫）
+- **Ruling：搬 `PlayerInput.cs` 時，一併透過 importer 改 `PlayerInput.inputactions` 的 `wrapperCodePath`**——
+  原 plan 也漏了：路徑寫死在 `.meta`，不改的話下次重新產生程式碼會在舊位置多一份，造成 CS0101。

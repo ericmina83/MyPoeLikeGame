@@ -98,18 +98,62 @@ Do not `git add`. Report the file moves and the verification result, then wait.
 
 ---
 
-### Task 2: Create `MyPoeLikeGame.Handlers.asmdef`
+### Task 2: Move the input source out of `Handlers/`, create `MyPoeLikeGame.Handlers.asmdef`
+
+> **Revised 2026-11-08** (see `docs/decisions.md`, "Ruling：`PlayerInputHandler` 與 `PlayerInput.cs` 跟著 Controller 層走").
+> The original Task 2 kept `PlayerInputHandler.cs` inside `Handlers.asmdef`. That cannot compile:
+> it uses the generated `PlayerInput` class, which at this point is still in `Assembly-CSharp`
+> (an asmdef cannot reference `Assembly-CSharp`), and the original Task 4 then moved it into
+> `Game` (which `Handlers` must not reference). `PlayerInputHandler` is an input source that sits
+> upstream of the Controllers — only the four Controllers use it — so it moves to the Controller side.
 
 **Files:**
+- Move: `Assets/MyPoeLikeGame/Scripts/Handlers/PlayerInputHandler.cs(.meta)` → `Assets/MyPoeLikeGame/Scripts/Controller/PlayerInputHandler.cs(.meta)`
+- Move: `Assets/MyPoeLikeGame/Scripts/PlayerInput.cs(.meta)` → `Assets/MyPoeLikeGame/Scripts/Controller/PlayerInput.cs(.meta)`
+- Modify (through Unity, not by hand): the `wrapperCodePath` import setting of `Assets/MyPoeLikeGame/InputActions/PlayerInput.inputactions`
 - Create: `Assets/MyPoeLikeGame/Scripts/Handlers/MyPoeLikeGame.Handlers.asmdef`
 
-No files move in this task — `Handlers/` already contains exactly the nine files it needs (`AimingHandler.cs`, `AnimationHandler.cs`, `AttackHandler.cs`, `CharacterStateHandler.cs`, `DamageHandler.cs`, `DodgeHandler.cs`, `HpHandler.cs`, `MovementHandler.cs`, `PlayerInputHandler.cs`).
+After the moves `Handlers/` contains eight files: `AimingHandler.cs`, `AnimationHandler.cs`, `AttackHandler.cs`, `CharacterStateHandler.cs`, `DamageHandler.cs`, `DodgeHandler.cs`, `HpHandler.cs`, `MovementHandler.cs`. None of them uses `UnityEngine.InputSystem` or `PlayerInput` (the only grep hit, in `CharacterStateHandler.cs`, is a comment).
+
+Namespaces do not change (Global Constraints): `PlayerInputHandler` stays `MyPoeLikeGame.Handlers`, `PlayerInput` stays `MyPoeLikeGame`. Renaming either is deferred to Phase 19.
 
 **Interfaces:**
 - Consumes: `MyPoeLikeGame.Core` (from Task 1)
 - Produces: asmdef name `MyPoeLikeGame.Handlers`, which Task 3, 4, 5 reference
+- Produces: `PlayerInputHandler.cs` and `PlayerInput.cs` inside `Controller/`, which Task 3 carries into `Controllers.asmdef`
 
-- [ ] **Step 1: Create the asmdef**
+- [ ] **Step 1: Move the input source**
+
+```bash
+cd Assets/MyPoeLikeGame/Scripts
+git mv Handlers/PlayerInputHandler.cs Controller/PlayerInputHandler.cs
+git mv Handlers/PlayerInputHandler.cs.meta Controller/PlayerInputHandler.cs.meta
+git mv PlayerInput.cs Controller/PlayerInput.cs
+git mv PlayerInput.cs.meta Controller/PlayerInput.cs.meta
+```
+
+Until Task 3 gives `Controller/` its asmdef, both files compile in `Assembly-CSharp` next to the four Controllers, exactly as before.
+
+- [ ] **Step 2: Point the Input Actions code generator at the new path**
+
+`PlayerInput.inputactions.meta` has `wrapperCodePath: Assets/MyPoeLikeGame/Scripts/PlayerInput.cs`. If it is left alone, the next edit of the Input Actions asset regenerates the class at the old path and the project gets two `PlayerInput` classes (`CS0101`).
+
+Change it through the importer (`mcp__UnityMCP__execute_code`), not by editing the `.meta` by hand:
+
+```csharp
+var path = "Assets/MyPoeLikeGame/InputActions/PlayerInput.inputactions";
+var importer = UnityEditor.AssetImporter.GetAtPath(path);
+var so = new UnityEditor.SerializedObject(importer);
+so.FindProperty("wrapperCodePath").stringValue = "Assets/MyPoeLikeGame/Scripts/Controller/PlayerInput.cs";
+so.ApplyModifiedPropertiesWithoutUndo();
+importer.SaveAndReimport();
+```
+
+Expected: `PlayerInput.inputactions.meta` now reads `wrapperCodePath: Assets/MyPoeLikeGame/Scripts/Controller/PlayerInput.cs`; no `Assets/MyPoeLikeGame/Scripts/PlayerInput.cs` reappears; `git diff` on `Controller/PlayerInput.cs` is empty or only regenerated whitespace. If `FindProperty` returns null, stop and set the path in the asset's Inspector instead (Generate C# Class → C# Class File).
+
+Task 3 renames `Controller/` to `Controllers/`, so this path is set once more there.
+
+- [ ] **Step 3: Create the asmdef**
 
 Write `Assets/MyPoeLikeGame/Scripts/Handlers/MyPoeLikeGame.Handlers.asmdef`:
 
@@ -118,8 +162,7 @@ Write `Assets/MyPoeLikeGame/Scripts/Handlers/MyPoeLikeGame.Handlers.asmdef`:
     "name": "MyPoeLikeGame.Handlers",
     "rootNamespace": "",
     "references": [
-        "MyPoeLikeGame.Core",
-        "Unity.InputSystem"
+        "MyPoeLikeGame.Core"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -133,15 +176,15 @@ Write `Assets/MyPoeLikeGame/Scripts/Handlers/MyPoeLikeGame.Handlers.asmdef`:
 }
 ```
 
-`Unity.InputSystem` is required because `PlayerInputHandler.cs` uses `UnityEngine.InputSystem` directly (confirmed by grep — it's the only other file that does, besides `PlayerInput.cs` which Task 4 covers separately).
+No `Unity.InputSystem` reference: with `PlayerInputHandler` gone, nothing in `Handlers` knows about input devices. That is a boundary the compiler now enforces too.
 
-- [ ] **Step 2: Verify — Unity six-step protocol**
+- [ ] **Step 4: Verify — Unity six-step protocol**
 
-Same procedure as Task 1 Step 3. This is the first point where `DamageHandler.cs`'s reference to `Core`'s `Damage` type and `AttackHandler.cs`'s reference to `Core.Combat`'s `AttackBehaviours` are resolved through an explicit asmdef reference rather than being alongside them in the same assembly — confirm 0 compile errors.
+Same procedure as Task 1 Step 3. This is the first point where `DamageHandler.cs`'s reference to `Core`'s `Damage` type and `AttackHandler.cs`'s reference to `Core.Combat`'s `AttackBehaviours` are resolved through an explicit asmdef reference rather than being alongside them in the same assembly — confirm 0 compile errors. Also confirm the Player in `Sample.unity` still has its `PlayerInputHandler` component (the `.meta` GUID moved with the file, so 0 "missing script" warnings is the evidence).
 
-- [ ] **Step 3: Stop for review**
+- [ ] **Step 5: Stop for review**
 
-Do not `git add`. Report the asmdef contents and the verification result, then wait.
+`git mv` stages the moves by itself; leave everything else un-added. Report the moves, the import-setting change, the asmdef contents and the verification result, then wait.
 
 ---
 
@@ -151,6 +194,7 @@ Do not `git add`. Report the asmdef contents and the verification result, then w
 - Move: `Assets/MyPoeLikeGame/Scripts/Controller/` → `Assets/MyPoeLikeGame/Scripts/Controllers/`
 - Move: `Assets/MyPoeLikeGame/Scripts/Controller.meta` → `Assets/MyPoeLikeGame/Scripts/Controllers.meta`
 - Create: `Assets/MyPoeLikeGame/Scripts/Controllers/MyPoeLikeGame.Controllers.asmdef`
+- Modify (through Unity): the `wrapperCodePath` import setting of `PlayerInput.inputactions`, again
 - Modify (temporarily, then revert): `Assets/MyPoeLikeGame/Scripts/Handlers/MovementHandler.cs`
 
 **Interfaces:**
@@ -165,7 +209,9 @@ git mv Controller Controllers
 git mv Controller.meta Controllers.meta
 ```
 
-The folder already contains `AttackController.cs`, `DodgeController.cs`, `LookController.cs`, `MovementController.cs`, and `readme.md` (all with their `.meta` files) — `git mv` of the directory carries all of them.
+The folder already contains `AttackController.cs`, `DodgeController.cs`, `LookController.cs`, `MovementController.cs`, `readme.md`, and — since Task 2 — `PlayerInputHandler.cs` and `PlayerInput.cs` (all with their `.meta` files). `git mv` of the directory carries all of them.
+
+Then repeat Task 2 Step 2 with the new path `Assets/MyPoeLikeGame/Scripts/Controllers/PlayerInput.cs`, and check the same Expected (meta updated, nothing regenerated at the old `Controller/` path).
 
 - [ ] **Step 2: Create the asmdef**
 
@@ -176,7 +222,8 @@ Write `Assets/MyPoeLikeGame/Scripts/Controllers/MyPoeLikeGame.Controllers.asmdef
     "name": "MyPoeLikeGame.Controllers",
     "rootNamespace": "",
     "references": [
-        "MyPoeLikeGame.Handlers"
+        "MyPoeLikeGame.Handlers",
+        "Unity.InputSystem"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -192,7 +239,9 @@ Write `Assets/MyPoeLikeGame/Scripts/Controllers/MyPoeLikeGame.Controllers.asmdef
 
 - [ ] **Step 3: Verify compiles clean — Unity six-step protocol**
 
-Same procedure as Task 1 Step 3. `Controller*` scripts still using `using MyPoeLikeGame.Handlers;` should resolve fine through the new explicit reference.
+`Unity.InputSystem` moved here from the original Task 2: `PlayerInputHandler.cs` and the generated `PlayerInput.cs` both use `UnityEngine.InputSystem` directly.
+
+Same procedure as Task 1 Step 3. `Controller*` scripts still using `using MyPoeLikeGame.Handlers;` should resolve fine through the new explicit reference — `PlayerInputHandler` now lives in this same assembly, while the other Handlers come from `MyPoeLikeGame.Handlers`.
 
 - [ ] **Step 4: RED — prove the boundary actually blocks (this is the whole point of choosing this plan over a `Core`-only split)**
 
@@ -221,8 +270,9 @@ Do not `git add`. Report the folder rename, the asmdef contents, and the exact `
 **Files:**
 - Create: `Assets/MyPoeLikeGame/Scripts/Game/MyPoeLikeGame.Game.asmdef`
 - Move: `Assets/MyPoeLikeGame/Scripts/EnemyGenerator.cs(.meta)` → `Assets/MyPoeLikeGame/Scripts/Game/EnemyGenerator.cs(.meta)`
-- Move: `Assets/MyPoeLikeGame/Scripts/PlayerInput.cs(.meta)` → `Assets/MyPoeLikeGame/Scripts/Game/PlayerInput.cs(.meta)`
 - Move: `Assets/MyPoeLikeGame/Scripts/Enemy/Enemy.cs(.meta)` → `Assets/MyPoeLikeGame/Scripts/Game/Enemy.cs(.meta)`
+
+> **Revised 2026-11-08:** `PlayerInput.cs` no longer moves here — Task 2 moved it to the Controller side.
 - Remove: `Assets/MyPoeLikeGame/Scripts/Enemy.meta` (the now-empty `Enemy/` folder's sibling meta — git doesn't track empty directories, but this sibling file is a real tracked file that must go)
 
 **Interfaces:**
@@ -237,9 +287,6 @@ mkdir -p Game
 
 git mv EnemyGenerator.cs Game/EnemyGenerator.cs
 git mv EnemyGenerator.cs.meta Game/EnemyGenerator.cs.meta
-
-git mv PlayerInput.cs Game/PlayerInput.cs
-git mv PlayerInput.cs.meta Game/PlayerInput.cs.meta
 
 git mv Enemy/Enemy.cs Game/Enemy.cs
 git mv Enemy/Enemy.cs.meta Game/Enemy.cs.meta
@@ -257,8 +304,7 @@ Write `Assets/MyPoeLikeGame/Scripts/Game/MyPoeLikeGame.Game.asmdef`:
     "references": [
         "MyPoeLikeGame.Core",
         "MyPoeLikeGame.Handlers",
-        "MyPoeLikeGame.Controllers",
-        "Unity.InputSystem"
+        "MyPoeLikeGame.Controllers"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -272,7 +318,7 @@ Write `Assets/MyPoeLikeGame/Scripts/Game/MyPoeLikeGame.Game.asmdef`:
 }
 ```
 
-`Unity.InputSystem` is needed because `PlayerInput.cs` (the source-generated Input Actions wrapper) uses it directly. `Enemy.cs` and `EnemyGenerator.cs` are both empty `MonoBehaviour` stubs with no other dependency (confirmed by reading both files in full during planning).
+No `Unity.InputSystem` reference any more: it was only there for `PlayerInput.cs`, which now lives in `Controllers`. `Enemy.cs` and `EnemyGenerator.cs` are both empty `MonoBehaviour` stubs with no other dependency (confirmed by reading both files in full during planning).
 
 - [ ] **Step 3: Verify — Unity six-step protocol**
 
