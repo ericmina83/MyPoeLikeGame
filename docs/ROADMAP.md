@@ -13,7 +13,8 @@
 **進行中：asmdef 切分（Phase 7.5）**——Task 1（`Core`）已完成。
 spec／plan 已修正（`PlayerInputHandler` 與 `PlayerInput.cs` 移到 Controller 層，見 `decisions.md`）。
 Task 2（搬出輸入來源 + `Handlers.asmdef`）已完成。
-下一個是 Task 3（`Controller/` → `Controllers/` + `Controllers.asmdef` + 邊界 RED/GREEN 驗證）。
+Task 3（`Controller/` → `Controllers/` + `Controllers.asmdef` + 邊界 RED/GREEN 驗證）已完成。
+下一個是 Task 4（`Game.asmdef`）。
 執行方式：不用 subagent，主對話在主資料夾逐 task 做，每個 task 停在未 add 等使用者 review。
 
 - Spec：[`superpowers/specs/2026-08-30-asmdef-split-design.md`](superpowers/specs/2026-08-30-asmdef-split-design.md)
@@ -36,9 +37,19 @@ Task 2（搬出輸入來源 + `Handlers.asmdef`）已完成。
   1. 改成**做法 B**（各 Controller 自己持有 `InputActionReference`、共用同一份資產，刪掉 `PlayerInputHandler`）？
   2. 還是改寫成**意圖解讀的中央層**（情境操作如「左鍵點敵人＝攻擊、點地面＝移動」、技能欄、輸入緩衝、輸入狀態切換）？
   3. 「輸入來源」要不要成為獨立的一層（資料夾／asmdef）？
+  4. **玩家的四個 Controller 合併成一個 `PlayerController`**（傾向要做）：Controller 是「一個角色一個大腦」，
+     不按能力拆（見 `decisions.md` 2026-11-09）。現在的四個裡三個是純轉發、只有 `LookController` 有實際換算，
+     而且都 `RequireComponent(PlayerInputHandler)`，AI 本來就用不到，拆開沒有換到重用。
+     **時機：Phase 17 寫完 `EnemyAIController` 之後**，有實際的 AI 大腦可以對照再定形狀。
   觸發條件（任一）：出現第二個輸入來源（回放、網路…）、開始做技能欄或情境操作、Phase 17 做完。
   若要分層，先開 `Controllers/Input/` 子資料夾，成員多了再考慮獨立 asmdef。
   不要做成「每個 Controller 自己 `new PlayerInput()`」——四份獨立資產，改鍵與狀態切換都要做四次。
+- [ ] **AI 行為改用圖像化行為樹**（2026-11-09 提出，Phase 17 之後）：行為樹資產＝「這種敵人怎麼想」（資料，
+  每種敵人一張圖）；`EnemyAIController`＝共用的**執行器**（每幀更新黑板上的感知、tick 樹，提供 Handler 的入口）。
+  葉節點呼叫 Handler 輸入埠（`SetMoveInput`、`SetAttackInput`、`RequestDodge`…），條件節點讀黑板。
+  - 節點程式碼屬於決策層：放 `Controllers` 那一側或另開引用 `Handlers` 的 AI asmdef，**不能放 `Handlers`**。
+  - 選工具（`com.unity.behavior` 官方、或 Behavior Designer／NodeCanvas）前先確認相容 Unity 6000.5（曾踩過 `CS0619`）。
+  - Phase 17 仍用手寫的最小 `EnemyAIController` 驗證架構；行為樹之後只是把 `Update` 裡的 if/else 換成 tick 一棵樹，Handler 不動。
 
 - [ ] **Phase 1–7 補 spec 與測試**（2026-08-30 決定）：採用 superpowers 之後，已完成的階段要
   事後補上設計文件與測試。前提是 asmdef 切分完成、`Core.Tests` 存在。

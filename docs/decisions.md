@@ -127,3 +127,13 @@
 - **「輸入來源」暫不獨立成一層**——只有 `PlayerInputHandler` 一個成員，而且可能被做法 B 刪掉；
   「Handler 不認識輸入」在 Task 2 後已由編譯器擋住，另開 asmdef 擋不到新東西。
   何時重議見 `ROADMAP.md`「輸入層的形狀」。
+- **Controller 是「一個角色一個大腦」，不按能力拆**——AI 的選擇互相衝突（追擊／停下攻擊／閃避）而且共用感知，
+  拆成 `AIMovementController`、`AIAttackController` 等等就得再造一個中央大腦來協調。所以 `EnemyAIController`
+  只會有一個，決策變複雜時在類別內部換成狀態機／效用評分／行為樹；不同敵人靠資料或決策策略區分。
+  必要的是 Handler 的輸入埠這條邊界（`SetMoveInput`、`RequestDodge`…），不是 Controller 的類別數量。
+- **玩家的四個 Controller 傾向合併成一個 `PlayerController`，但等 Phase 17 之後**——它們綁死
+  `PlayerInputHandler`、AI 用不到，按能力拆沒有換到重用；現在能拆只是因為輸入剛好互不衝突，
+  一有情境操作就會遇到跟 AI 一樣的協調問題。等有實際的 `EnemyAIController` 對照再定形狀。
+- **AI 之後改用圖像化行為樹，`EnemyAIController` 維持單一類別、當執行器**——使用者希望用行為樹圖定義各種 AI；
+  不同敵人＝不同的樹（資料），不是不同的 Controller 類別。Phase 17 仍先手寫最小版驗證邊界，
+  行為樹在那之後導入。（`ROADMAP.md`「AI 行為改用圖像化行為樹」）
