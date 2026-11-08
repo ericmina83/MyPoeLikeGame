@@ -1,0 +1,18 @@
+{
+    "name": "MyPoeLikeGame.Game",
+    "rootNamespace": "",
+    "references": [
+        "MyPoeLikeGame.Core",
+        "MyPoeLikeGame.Handlers",
+        "MyPoeLikeGame.Controllers"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
