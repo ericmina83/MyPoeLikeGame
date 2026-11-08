@@ -116,3 +116,14 @@
   （spec「修正（2026-11-08）」、plan Task 2–4 已改寫）
 - **Ruling：搬 `PlayerInput.cs` 時，一併透過 importer 改 `PlayerInput.inputactions` 的 `wrapperCodePath`**——
   原 plan 也漏了：路徑寫死在 `.meta`，不改的話下次重新產生程式碼會在舊位置多一份，造成 CS0101。
+  （執行 Task 2 時發現序列化欄位名是 `m_WrapperCodePath`，`.meta` 顯示的是去掉 `m_` 的名字；plan 已更正。）
+
+## 2026-11-09：輸入層
+
+- **資料夾按「角色」分，不按「會不會發事件」分**——使用者提議開一層「事件發送器」，但在這個專案裡
+  Handler 之間本來就用 Observable 溝通（`DodgeEvents`、`AttackEvents`、`IsBusy`…），「發事件」是實作手法，
+  不是角色；照手法分會讓每個新類別都分不清該放哪，也容易長回 `CLAUDE.md` ⑤ 禁止的全域事件匯流排。
+  角色是「感知（輸入來源）→ 決策（Controller）→ 執行（Handler）」，判準是「訊號從哪裡來」。
+- **「輸入來源」暫不獨立成一層**——只有 `PlayerInputHandler` 一個成員，而且可能被做法 B 刪掉；
+  「Handler 不認識輸入」在 Task 2 後已由編譯器擋住，另開 asmdef 擋不到新東西。
+  何時重議見 `ROADMAP.md`「輸入層的形狀」。

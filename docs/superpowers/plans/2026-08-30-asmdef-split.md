@@ -144,7 +144,8 @@ Change it through the importer (`mcp__UnityMCP__execute_code`), not by editing t
 var path = "Assets/MyPoeLikeGame/InputActions/PlayerInput.inputactions";
 var importer = UnityEditor.AssetImporter.GetAtPath(path);
 var so = new UnityEditor.SerializedObject(importer);
-so.FindProperty("wrapperCodePath").stringValue = "Assets/MyPoeLikeGame/Scripts/Controller/PlayerInput.cs";
+// The serialized name is m_WrapperCodePath; the .meta YAML shows it without the m_ prefix.
+so.FindProperty("m_WrapperCodePath").stringValue = "Assets/MyPoeLikeGame/Scripts/Controller/PlayerInput.cs";
 so.ApplyModifiedPropertiesWithoutUndo();
 importer.SaveAndReimport();
 ```

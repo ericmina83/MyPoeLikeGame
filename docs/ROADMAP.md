@@ -11,8 +11,9 @@
 ## 目前狀態（2026-11-07）
 
 **進行中：asmdef 切分（Phase 7.5）**——Task 1（`Core`）已完成。
-spec／plan 已修正（`PlayerInputHandler` 與 `PlayerInput.cs` 移到 Controller 層，見 `decisions.md`），
-下一步：Task 2（搬出輸入來源 + `Handlers.asmdef`）。
+spec／plan 已修正（`PlayerInputHandler` 與 `PlayerInput.cs` 移到 Controller 層，見 `decisions.md`）。
+Task 2（搬出輸入來源 + `Handlers.asmdef`）已完成。
+下一個是 Task 3（`Controller/` → `Controllers/` + `Controllers.asmdef` + 邊界 RED/GREEN 驗證）。
 執行方式：不用 subagent，主對話在主資料夾逐 task 做，每個 task 停在未 add 等使用者 review。
 
 - Spec：[`superpowers/specs/2026-08-30-asmdef-split-design.md`](superpowers/specs/2026-08-30-asmdef-split-design.md)
@@ -28,6 +29,16 @@ spec／plan 已修正（`PlayerInputHandler` 與 `PlayerInput.cs` 移到 Control
   這次是用 SSH 網址推送，之後 `origin` 已改為 SSH（`git@github.com:ericmina83/MyPoeLikeGame.git`）。
 
 ### 不屬於任何 phase 的待辦
+
+- [ ] **輸入層的形狀**（2026-11-09 提出，等觸發條件出現再決定）：現在的 `PlayerInputHandler` 只是轉發器——
+  把 Input System 的 callback 轉成四條 Observable、管輸入資產的生命週期，沒有任何遊戲判斷，
+  而且四個 action 與四個 Controller 一對一。三個要一起回答的問題：
+  1. 改成**做法 B**（各 Controller 自己持有 `InputActionReference`、共用同一份資產，刪掉 `PlayerInputHandler`）？
+  2. 還是改寫成**意圖解讀的中央層**（情境操作如「左鍵點敵人＝攻擊、點地面＝移動」、技能欄、輸入緩衝、輸入狀態切換）？
+  3. 「輸入來源」要不要成為獨立的一層（資料夾／asmdef）？
+  觸發條件（任一）：出現第二個輸入來源（回放、網路…）、開始做技能欄或情境操作、Phase 17 做完。
+  若要分層，先開 `Controllers/Input/` 子資料夾，成員多了再考慮獨立 asmdef。
+  不要做成「每個 Controller 自己 `new PlayerInput()`」——四份獨立資產，改鍵與狀態切換都要做四次。
 
 - [ ] **Phase 1–7 補 spec 與測試**（2026-08-30 決定）：採用 superpowers 之後，已完成的階段要
   事後補上設計文件與測試。前提是 asmdef 切分完成、`Core.Tests` 存在。
