@@ -158,6 +158,23 @@ Edit Mode 重新編譯**完全不會**呼叫任何生命週期方法（除非標
 
 只做到第 4 步就宣告通過，是不夠的。
 
+## Play Mode 中要觀察「隨時間變化」的行為時
+
+**Editor 視窗不在前景時，Play Mode 的遊戲迴圈不會前進**——這個專案的 `runInBackground` 是 0。
+症狀：`Time.time` 停在 0、`Time.frameCount` 停在 1，狀態機永遠停在第一個狀態。
+`mcpforunity://editor/state` 的 `editor.is_focused` 會是 `false`。
+
+**不要用 `Application.runInBackground = true` 繞過。** 在 Editor 裡，這個 setter 會連帶改掉記憶體中的
+`PlayerSettings.runInBackground`（實測過），只要 Unity 存一次專案設定就會寫進
+`ProjectSettings/ProjectSettings.asset`，等於偷改專案設定。
+
+正確做法：**請使用者把 Unity 視窗切到前景**，再進 Play Mode 觀察。
+只需要「能進 Play Mode、console 0 筆」的驗證不受影響，這條只針對要看行為隨時間推進的情況
+（例如攻擊狀態機循環、投射物生成）。
+
+萬一已經設了：取樣完立刻設回原值，並確認 `PlayerSettings.runInBackground` 與
+`ProjectSettings.asset` 都沒有變動，在回報裡說明。
+
 ## 套件改動的額外規則
 
 - **`refresh_unity` 不會重新解析 `Packages/manifest.json` 的變更。** 手改 manifest 後

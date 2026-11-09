@@ -137,3 +137,9 @@
 - **AI 之後改用圖像化行為樹，`EnemyAIController` 維持單一類別、當執行器**——使用者希望用行為樹圖定義各種 AI；
   不同敵人＝不同的樹（資料），不是不同的 Controller 類別。Phase 17 仍先手寫最小版驗證邊界，
   行為樹在那之後導入。（`ROADMAP.md`「AI 行為改用圖像化行為樹」）
+
+## 2026-11-10：驗證協定
+
+- **Editor 不在前景時，要觀察行為隨時間推進的驗證，改請使用者把 Unity 切到前景，不用 `Application.runInBackground` 繞過**——
+  Task 5 驗證 Sandbox 時這樣繞過，發現它在 Editor 裡會改到記憶體中的 PlayerSettings（已還原、未寫入檔案）。
+  （`CLAUDE.md`「Play Mode 中要觀察隨時間變化的行為時」）

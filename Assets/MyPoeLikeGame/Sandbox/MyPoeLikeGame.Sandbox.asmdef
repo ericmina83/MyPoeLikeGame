@@ -1,0 +1,17 @@
+{
+    "name": "MyPoeLikeGame.Sandbox",
+    "rootNamespace": "",
+    "references": [
+        "MyPoeLikeGame.Core",
+        "MyPoeLikeGame.Handlers"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
