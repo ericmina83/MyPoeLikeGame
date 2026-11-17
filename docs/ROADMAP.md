@@ -15,7 +15,8 @@ spec／plan 已修正（`PlayerInputHandler` 與 `PlayerInput.cs` 移到 Control
 Task 2（搬出輸入來源 + `Handlers.asmdef`）已完成。
 Task 3（`Controller/` → `Controllers/` + `Controllers.asmdef` + 邊界 RED/GREEN 驗證）已完成。
 Task 4（`Game/` + `Game.asmdef`）已完成。
-Task 5（`Sandbox.asmdef`）已完成。下一個是 Task 6（`Core.Tests.asmdef`）。
+Task 5（`Sandbox.asmdef`）已完成。
+Task 6（`Core.Tests.asmdef`）已完成。下一個是 Task 7（`Sample.unity` 整體回歸）。
 執行方式：不用 subagent，主對話在主資料夾逐 task 做，每個 task 停在未 add 等使用者 review。
 
 - Spec：[`superpowers/specs/2026-08-30-asmdef-split-design.md`](superpowers/specs/2026-08-30-asmdef-split-design.md)

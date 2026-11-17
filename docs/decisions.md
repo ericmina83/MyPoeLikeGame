@@ -143,3 +143,7 @@
 - **Editor 不在前景時，要觀察行為隨時間推進的驗證，改請使用者把 Unity 切到前景，不用 `Application.runInBackground` 繞過**——
   Task 5 驗證 Sandbox 時這樣繞過，發現它在 Editor 裡會改到記憶體中的 PlayerSettings（已還原、未寫入檔案）。
   （`CLAUDE.md`「Play Mode 中要觀察隨時間變化的行為時」）
+- **Ruling：Task 6 用一個暫時的冒煙測試驗證測試管道，跑完即刪，不進 commit**——plan 的 Expected
+  「Test Runner 回報 0 個測試」證明不了什麼：asmdef 底下沒有 `.cs` 時 Unity 根本不產生組件，
+  有沒有這個 asmdef 結果都一樣是 0。暫時放一個引用 `Core` 型別的 `[Test]`，跑出 1/1 通過，
+  才算證明 NUnit 引用、`Core` 引用與 Test Runner 探索都通了；刪掉後再跑回 0。
