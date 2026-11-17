@@ -8,16 +8,14 @@
 > 不在 repo 裡）。那個檔案後來從硬碟上消失，2026-10-19 從對話紀錄重建回來並移進 repo。
 > 文中的 `檔案.cs:行號` 連結是當時的位置，asmdef 切分搬過檔案之後會對不上，以檔名搜尋為準。
 
-## 目前狀態（2026-11-07）
+## 目前狀態（2026-11-17）
 
-**進行中：asmdef 切分（Phase 7.5）**——Task 1（`Core`）已完成。
-spec／plan 已修正（`PlayerInputHandler` 與 `PlayerInput.cs` 移到 Controller 層，見 `decisions.md`）。
-Task 2（搬出輸入來源 + `Handlers.asmdef`）已完成。
-Task 3（`Controller/` → `Controllers/` + `Controllers.asmdef` + 邊界 RED/GREEN 驗證）已完成。
-Task 4（`Game/` + `Game.asmdef`）已完成。
-Task 5（`Sandbox.asmdef`）已完成。
-Task 6（`Core.Tests.asmdef`）已完成。下一個是 Task 7（`Sample.unity` 整體回歸）。
-執行方式：不用 subagent，主對話在主資料夾逐 task 做，每個 task 停在未 add 等使用者 review。
+**Phase 7.5（asmdef 切分）已完成**——7 個 task 全部做完並驗證（`f7c417d`…`8671721`，Task 7 是不改檔案的回歸檢查）。
+專案現在是六個組件：`Core` ← `Handlers` ← `Controllers` ← `Game`，加上 `Sandbox`、`Core.Tests`；
+「Handler 不可以認識 Controller」與「Handler 不認識輸入裝置」都由編譯器擋住。
+
+**下一步：Phase 8**（各 Handler 加 `OnDestroy`），從這裡開始走 TDD。
+「Phase 1–7 補 spec 與測試」的前提（`Core.Tests` 存在）也已滿足，順序待使用者決定。
 
 - Spec：[`superpowers/specs/2026-08-30-asmdef-split-design.md`](superpowers/specs/2026-08-30-asmdef-split-design.md)
 - Plan：[`superpowers/plans/2026-08-30-asmdef-split.md`](superpowers/plans/2026-08-30-asmdef-split.md)（7 個 task）
@@ -152,8 +150,8 @@ Prefabs/Characters/Player.prefab       ← 由 Cube.prefab 剝掉造型而來，
 | 5 | `CharacterStateHandler` → `ReactiveProperty` ✅ `bbd4e38`（與 6 合併，做法改成 flag 板，見下方各節） | `refactor(state):` |
 | 6 | 收斂三份 `canMove/canAim/canAttack` ✅ `bbd4e38`（收斂成 `IsBusy`，不是 `CanAct`） | `refactor(state):` |
 | 7 | Handler 的 Subject 封裝 ✅ `1f41fc9` | `refactor:` |
-| **7.5** | **asmdef 切分（從「下一輪」提前，TDD 的前提）** ⬅ **下一步**，spec `0318aa4`、plan `025ca57` | `build:` |
-| 8 | Disposable 與 Subject 生命週期（`OnDisable` 防呆已在 `ccd0b98` 做完，剩 `OnDestroy`） | `refactor:` |
+| 7.5 | asmdef 切分（從「下一輪」提前，TDD 的前提）✅ `f7c417d` `efa6be2` `2571336` `f2567a4` `3ec11a3` `8671721`，plan 修正 `48cbd9d` | `build:` |
+| **8** | **Disposable 與 Subject 生命週期**（`OnDisable` 防呆已在 `ccd0b98` 做完，剩 `OnDestroy`）⬅ **下一步** | `refactor:` |
 | **C. 重整 prefab 與接回鏈路** | | |
 | 9 | 抽出 `Models/Arissa.prefab` | `refactor(prefab):` |
 | 10 | 打造純邏輯 `Player.prefab`，場景換過去 | `refactor(prefab):` |
@@ -401,7 +399,11 @@ public Observable<DodgeEvent> DodgeEvent => dodgeEvent.AsObservable();
 **驗收**：同 Phase 5。
 **Commit**：`refactor: encapsulate handler subjects behind observables`
 
-## Phase 7.5 — asmdef 切分 ⬅ 下一步
+## Phase 7.5 — asmdef 切分 ✅
+
+> **實際做法的差異**：`PlayerInputHandler` 與自動產生的 `PlayerInput.cs` 歸 `Controllers`（不是 `Handlers`／`Game`），
+> `Unity.InputSystem` 只有 `Controllers` 引用；搬 `PlayerInput.cs` 時一併改了 `PlayerInput.inputactions` 的
+> `wrapperCodePath`。理由見 `decisions.md` 2026-11-07～11-17 與 spec「修正（2026-11-08）」。
 
 **從「這輪明確不做」提前。** 2026-08-30 改用 superpowers 流程後，Phase 8 之後要走 TDD，
 而 EditMode 測試需要明確的 asmdef 可以引用；同時也是「Phase 1–7 補測試」的前提。
@@ -414,7 +416,7 @@ public Observable<DodgeEvent> DodgeEvent => dodgeEvent.AsObservable();
 
 做完之後，下面各 phase 提到的檔案路徑會變（例如 `Scripts/Pool.cs` → `Scripts/Core/Pooling/Pool.cs`）。
 
-## Phase 8 — Disposable 與 Subject 生命週期
+## Phase 8 — Disposable 與 Subject 生命週期 ⬅ 下一步
 
 > **這不是理論上的邊界情況。**Unity 每次 domain reload（重新編譯）都會呼叫
 > `OnDisable` / `OnEnable` 而不重跑 `Awake`，所以這類 NRE **每次改程式碼都會發生**。

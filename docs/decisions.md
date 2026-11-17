@@ -147,3 +147,11 @@
   「Test Runner 回報 0 個測試」證明不了什麼：asmdef 底下沒有 `.cs` 時 Unity 根本不產生組件，
   有沒有這個 asmdef 結果都一樣是 0。暫時放一個引用 `Core` 型別的 `[Test]`，跑出 1/1 通過，
   才算證明 NUnit 引用、`Core` 引用與 Test Runner 探索都通了；刪掉後再跑回 0。
+
+## 2026-11-17：asmdef 切分收尾
+
+- **Ruling：Task 7 的冒煙測試改用 `PlayerInputHandler` 找玩家，不用 `FindFirstObjectByType<CharacterStateHandler>()`**——
+  `Sample.unity` 的 Enemy 身上也有 `CharacterStateHandler`，plan 原本的寫法可能測到敵人。
+  另外補驗了 plan 沒涵蓋的攻擊鏈（IDLE → OVERDRAW →（放開）→ WITHDRAW → IDLE）。
+- **最終的整體 review 例外派一位 subagent reviewer**——2026-11-07「不用 subagent」指的是執行 task；
+  全分支 review 需要一個沒看過實作過程的新視角，作者自我 review 看不出自己的盲點，使用者同意這次例外。
